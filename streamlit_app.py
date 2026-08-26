@@ -4,14 +4,138 @@ from datetime import datetime
 import csv
 import io
 
-# ==================== CONFIGURACIÓN ====================
+# ==================== CONFIGURACIÓN DE PÁGINA Y ESTILOS ====================
 st.set_page_config(
     page_title="NOVEDADES ESCUADRÓN H",
-    page_icon="",
+    page_icon="👮‍♂️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# URL del Logo de Gendarmería (Escudo Oficial)
+LOGO_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Escudo_de_la_Gendarmer%C3%ADa_Nacional_Argentina.svg/1200px-Escudo_de_la_Gendarmer%C3%ADa_Nacional_Argentina.svg.png"
+
+# Inyección de CSS para diseño moderno Verde/Gris Oscuro
+st.markdown("""
+<style>
+    /* Fondo general y textos */
+    .stApp {
+        background-color: #121212;
+        color: #e0e0e0;
+    }
+    
+    /* Títulos y encabezados */
+    h1, h2, h3, h4, h5, h6, label, p, span, div {
+        color: #f0f0f0 !important;
+    }
+    
+    /* Sidebar (Menú lateral) */
+    section[data-testid="stSidebar"] {
+        background-color: #1e1e1e;
+        border-right: 1px solid #333;
+    }
+    section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2 {
+        color: #4CAF50 !important;
+    }
+    
+    /* Botones Primarios (Verde Gendarmería) */
+    .stButton > button {
+        background-color: #2E5936 !important;
+        color: white !important;
+        border: 1px solid #4CAF50 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #4CAF50 !important;
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+    }
+    
+    /* Inputs y Selectboxes (Campos de texto) */
+    .stTextInput > div > div > input, 
+    .stSelectbox > div > div > div,
+    .stTextArea > div > div > textarea {
+        background-color: #2c2c2c !important;
+        color: white !important;
+        border: 1px solid #444 !important;
+        border-radius: 8px !important;
+    }
+    .stTextInput > div > div > input:focus, 
+    .stSelectbox > div > div > div:focus {
+        border-color: #4CAF50 !important;
+        box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+    }
+    
+    /* Dataframes (Tablas) */
+    .dataframe {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #333 !important;
+    }
+    .dataframe th {
+        background-color: #2E5936 !important;
+        color: white !important;
+    }
+    
+    /* Alertas e Info boxes */
+    .stAlert {
+        background-color: #2c2c2c !important;
+        border-left: 4px solid #4CAF50 !important;
+        color: #e0e0e0 !important;
+    }
+    
+    /* Login Container Personalizado */
+    .login-card {
+        max-width: 450px;
+        margin: 50px auto;
+        padding: 40px;
+        background: linear-gradient(145deg, #1e1e1e, #252525);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border: 1px solid #333;
+        text-align: center;
+    }
+    .login-logo {
+        width: 120px;
+        height: auto;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));
+    }
+    .login-title {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #4CAF50 !important;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .login-subtitle {
+        font-size: 0.9em;
+        color: #aaa !important;
+        margin-bottom: 30px;
+        font-style: italic;
+    }
+    
+    /* Tabs (Pestañas) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #2c2c2c;
+        border-radius: 8px 8px 0 0;
+        color: #aaa;
+        padding: 10px 20px;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #2E5936 !important;
+        color: white !important;
+        border-bottom: 2px solid #4CAF50;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ==================== CONSTANTES Y DATOS ====================
 USUARIO_CORRECTO = "DRAGJOTAYANLEONEL"
 CONTRASENA_CORRECTA = "Drag2026"
 
@@ -171,41 +295,38 @@ def calcular_estadisticas():
         "aulas_dict": aulas_dict, "novedades_hoy": novedades_hoy
     }
 
-# ==================== PANTALLA DE LOGIN ====================
+# ==================== PANTALLA DE LOGIN MODERNA ====================
 def pantalla_login():
-    st.markdown("""
-    <style>
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 40px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .login-title { text-align: center; color: #1a3a6b; font-size: 2em; margin-bottom: 10px; }
-        .login-subtitle { text-align: center; color: #555; margin-bottom: 30px; }
-    </style>
-    """, unsafe_allow_html=True)
+    # Usamos columnas para centrar perfectamente la tarjeta
+    col_center = st.columns([1, 2, 1]) 
     
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
-    st.markdown('<h1 class="login-title"> Acceso Restringido</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
-    
-    with st.form("login_form"):
-        usuario = st.text_input("👤 Usuario", placeholder="Ingrese su usuario")
-        contrasena = st.text_input(" Contraseña", type="password", placeholder="Ingrese su contraseña")
-        submitted = st.form_submit_button(" Ingresar", type="primary", use_container_width=True)
+    with col_center[1]:
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
         
-        if submitted:
-            if usuario == USUARIO_CORRECTO and contrasena == CONTRASENA_CORRECTA:
-                st.session_state['logueado'] = True
-                st.rerun()
-            else:
-                st.error("❌ Usuario o contraseña incorrectos")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div style="text-align: center; color: gray; margin-top: 20px;"><small>Sistema de Gendarmería Nacional Argentina</small></div>', unsafe_allow_html=True)
+        # Logo de Gendarmería
+        st.image(LOGO_URL, width=100, use_column_width=False)
+        
+        st.markdown('<h1 class="login-title">Acceso Restringido</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
+        
+        with st.form("login_form", clear_on_submit=True):
+            usuario = st.text_input("Usuario", placeholder="Ingrese su usuario", label_visibility="collapsed")
+            contrasena = st.text_input("Contraseña", type="password", placeholder="Ingrese su contraseña", label_visibility="collapsed")
+            
+            # Botón de ancho completo
+            submitted = st.form_submit_button("INGRESAR AL SISTEMA", use_container_width=True)
+            
+            if submitted:
+                if usuario == USUARIO_CORRECTO and contrasena == CONTRASENA_CORRECTA:
+                    st.session_state['logueado'] = True
+                    st.rerun()
+                else:
+                    st.error("❌ Credenciales incorrectas. Intente nuevamente.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Footer pequeño
+        st.markdown('<div style="text-align: center; color: #666; margin-top: 20px; font-size: 0.8em;">Sistema de Gendarmería Nacional Argentina © 2026</div>', unsafe_allow_html=True)
 
 # ==================== INICIALIZACIÓN DE SESIÓN ====================
 if 'logueado' not in st.session_state:
@@ -215,6 +336,7 @@ if not st.session_state['logueado']:
     pantalla_login()
     st.stop()
 
+# Cargar datos iniciales si no existen en sesión
 if 'empleados' not in st.session_state:
     st.session_state['empleados'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['empleados'])
 if 'horarios' not in st.session_state:
@@ -227,73 +349,76 @@ if 'plan_llamada' not in st.session_state:
     st.session_state['plan_llamada'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['plan_llamada'])
 
 # ==================== ENCABEZADO PRINCIPAL ====================
-st.markdown("""
-<style>
-    .titulo-principal { text-align: center; font-size: 3.2em; font-weight: bold; color: #1a3a6b; margin-top: 10px; margin-bottom: 5px; }
-    .subtitulo { text-align: center; font-size: 1.3em; color: #555; margin-bottom: 20px; font-style: italic; }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown('<h1 class="titulo-principal">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitulo">DRAGONEANTE JOTAYAN MEDINA LEONEL - AÑO 2026</p>', unsafe_allow_html=True)
+st.markdown("---")
+col_logo, col_titulo = st.columns([1, 5])
+with col_logo:
+    st.image(LOGO_URL, width=80)
+with col_titulo:
+    st.markdown('<h1 style="color: #4CAF50; font-size: 2.5em; margin-top: 10px;">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #aaa; font-size: 1.2em; margin-top: -10px;">DRAGONEANTE JOTAYAN MEDINA LEONEL - AÑO 2026</p>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
-    st.title("📊 Panel de Control")
+    st.markdown('<h2 style="color: #4CAF50; text-align: center;">PANEL DE CONTROL</h2>', unsafe_allow_html=True)
     st.markdown("---")
-    st.markdown(f"**📅 Fecha:** {datetime.now().strftime('%d/%m/%Y')}")
-    st.markdown(f"**🕐 Hora:** {datetime.now().strftime('%H:%M:%S')}")
+    
+    # Fecha y Hora destacadas
+    c1, c2 = st.columns(2)
+    with c1: st.metric("📅 Fecha", datetime.now().strftime('%d/%m/%Y'))
+    with c2: st.metric("🕐 Hora", datetime.now().strftime('%H:%M:%S'))
+    
     st.markdown("---")
     
     stats = calcular_estadisticas()
     if stats:
+        st.markdown("#### 📊 Estadísticas del Día")
         st.metric(" Fuerza Efectiva", stats["total_general"])
         st.metric("✅ Presentes", stats["presentes_total"])
-        st.metric(" Ausentes", stats["ausentes_total"])
-        st.markdown("---")
-        st.metric(" Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
+        st.metric("️ Ausentes", stats["ausentes_total"])
+        st.divider()
+        st.metric("🎓 Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
         st.metric("🛡️ Aux. Operativo", f"{stats['presentes_cao']}/{stats['total_cao']}")
     
     st.markdown("---")
-    st.subheader("💾 Gestión de Datos")
-    st.info("⚠️ En la nube, los datos se guardan en memoria. Usa estos botones para guardar tus avances.")
+    st.markdown("#### 💾 Gestión de Datos")
+    st.caption("⚠️ En la nube los datos son temporales. Descarga tus avances.")
     
-    if st.download_button("📥 Descargar empleados.csv", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv"):
-        st.success("Descargando...")
-    if st.download_button("📥 Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv"):
-        st.success("Descargando...")
+    if st.download_button(" Descargar empleados.csv", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True):
+        pass
+    if st.download_button(" Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True):
+        pass
         
-    st.markdown("---")
-    if st.button("🔄 Reiniciar Datos de Prueba", type="secondary"):
+    st.divider()
+    if st.button("🔄 Reiniciar Datos", type="secondary", use_container_width=True):
         st.session_state['empleados'] = []
         st.session_state['novedades'] = []
         st.session_state['racionamiento'] = []
-        st.success("Datos reiniciados. Importa un nuevo Excel para comenzar.")
+        st.success("Datos reiniciados.")
         st.rerun()
         
-    st.markdown("---")
-    if st.button("🚪 Cerrar Sesión"):
+    st.divider()
+    if st.button(" Cerrar Sesión", type="primary", use_container_width=True):
         st.session_state['logueado'] = False
         st.rerun()
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "👥 Personal", "🏫 Aulas y Horarios", " Plan de Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 Reportes"
+    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
 with tab1:
-    st.header("👥 Gestión de Personal")
+    st.header("Gestión de Personal")
     col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.subheader("📤 Importar Excel")
+        st.subheader(" Importar Excel")
         st.info("Usa el archivo `listaescuadronh.xlsx`")
         archivo_excel = st.file_uploader("Selecciona tu archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
         
         if archivo_excel is not None:
-            if st.button("💾 Importar Personal", type="primary"):
+            if st.button("💾 Importar Personal", type="primary", use_container_width=True):
                 try:
                     df = pd.read_excel(archivo_excel)
                     df.columns = [str(c).strip().upper() for c in df.columns]
@@ -328,7 +453,7 @@ with tab1:
 
 # ==================== TAB 2: AULAS Y HORARIOS ====================
 with tab2:
-    st.header("🏫 Configuración de Horarios de Aulas")
+    st.header("Configuración de Horarios de Aulas")
     st.info("🎓 Tercer Año: 23TT, 18TM, 23TM, 24TM, 26TM, 28TM | 🛡️ CAO: 7TT, 8TT")
     
     horarios_actuales = st.session_state.get('horarios', [])
@@ -340,18 +465,18 @@ with tab2:
         for i, aula in enumerate(AULAS):
             with cols[i % 2]:
                 horario_actual = horarios_dict.get(aula, "06:20")
-                horario = st.selectbox(f" Aula {aula}", ["06:20", "07:30", "08:10", "09:20"],
+                horario = st.selectbox(f"Aula {aula}", ["06:20", "07:30", "08:10", "09:20"],
                                        index=["06:20", "07:30", "08:10", "09:20"].index(horario_actual) if horario_actual in ["06:20", "07:30", "08:10", "09:20"] else 0,
                                        key=f"horario_{aula}")
                 nuevos_horarios.append([aula, horario])
         
-        if st.form_submit_button("💾 Guardar Horarios", type="primary"):
+        if st.form_submit_button("💾 Guardar Horarios", type="primary", use_container_width=True):
             st.session_state['horarios'] = nuevos_horarios
             st.success("✅ Horarios guardados en memoria")
             st.rerun()
 
-    st.markdown("---")
-    st.subheader("📊 Reporte de Aulas")
+    st.divider()
+    st.subheader("Reporte de Aulas")
     stats = calcular_estadisticas()
     if stats:
         col1, col2 = st.columns(2)
@@ -360,7 +485,7 @@ with tab2:
             st.metric("Total", sum(info["total"] for info in stats["aulas_dict"].values() if info["horario"]=="06:20"))
             st.metric("Presentes", sum(info["total"]-info["ausentes"] for info in stats["aulas_dict"].values() if info["horario"]=="06:20"))
         with col2:
-            st.markdown("####  Horario Diferenciado")
+            st.markdown("#### ⏰ Horario Diferenciado")
             st.metric("Total", sum(info["total"] for info in stats["aulas_dict"].values() if info["horario"]!="06:20"))
             st.metric("Presentes", sum(info["total"]-info["ausentes"] for info in stats["aulas_dict"].values() if info["horario"]!="06:20"))
         
@@ -369,13 +494,13 @@ with tab2:
 
 # ==================== TAB 3: PLAN DE LLAMADA ====================
 with tab3:
-    st.header("📞 Plan de Llamada")
-    st.info(" Información detallada de cada aspirante")
+    st.header("Plan de Llamada")
+    st.info("Información detallada de cada aspirante")
     
     empleados = st.session_state.get('empleados', [])
     
     if empleados:
-        st.subheader("🔍 Buscar Aspirante")
+        st.subheader("Buscar Aspirante")
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
         empleado_sel = st.selectbox("Seleccionar Aspirante:", [""] + nombres)
         
@@ -390,8 +515,8 @@ with tab3:
                     info_detallada = row
                     break
             
-            st.markdown("---")
-            st.subheader(f" Información de: {nombre}")
+            st.divider()
+            st.subheader(f"Información de: {nombre}")
             
             col1, col2 = st.columns(2)
             with col1:
@@ -409,7 +534,7 @@ with tab3:
                 else:
                     st.warning("⚠️ No hay información detallada cargada para este aspirante.")
             
-            st.markdown("---")
+            st.divider()
             if info_detallada:
                 info_texto = f"FICHA PERSONAL\n\nGrado: {grado}\nNombre: {nombre}\n"
                 info_texto += f"DNI: {next((e[2] for e in empleados if e[1].upper().strip() == nombre.upper().strip()), 'N/A')}\n"
@@ -419,37 +544,37 @@ with tab3:
                     info_texto += f"\nDomicilio: {info_detallada[2]}\nTeléfono: {info_detallada[3]}\n"
                     info_texto += f"Contacto Emergencia: {info_detallada[4]}\nTel. Emergencia: {info_detallada[5]}\n"
                 
-                st.download_button(" Descargar Ficha Personal (TXT)", info_texto, f"ficha_{nombre.replace(' ', '_')}.txt", "text/plain")
+                st.download_button("📥 Descargar Ficha Personal (TXT)", info_texto, f"ficha_{nombre.replace(' ', '_')}.txt", "text/plain")
     else:
         st.warning("⚠️ Primero debes importar el personal en la pestaña 'Personal'")
 
 # ==================== TAB 4: NOVEDADES ====================
 with tab4:
-    st.header("📋 Registro de Novedades")
+    st.header("Registro de Novedades")
     empleados = st.session_state.get('empleados', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
     
     stats = calcular_estadisticas()
     if stats:
         col1, col2, col3 = st.columns(3)
-        with col1: st.metric("📋 Ausentes Total", stats["ausentes_total"])
-        with col2: st.metric("🎓 Ausentes Tercer Año", stats["ausentes_3"])
-        with col3: st.metric("🛡️ Ausentes Aux. Operativo", stats["ausentes_cao"])
+        with col1: st.metric("Ausentes Total", stats["ausentes_total"])
+        with col2: st.metric("Ausentes Tercer Año", stats["ausentes_3"])
+        with col3: st.metric("Ausentes Aux. Operativo", stats["ausentes_cao"])
     
     if empleados:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
         
-        st.subheader("➕ Registrar Nueva Novedad")
+        st.subheader("Registrar Nueva Novedad")
         col1, col2 = st.columns(2)
         with col1:
-            empleado_sel = st.selectbox("🔍 Buscar Empleado:", [""] + nombres, key="nov_emp")
-            categoria = st.selectbox("📂 Categoría:", [""] + list(MOTIVOS.keys()), key="nov_cat")
+            empleado_sel = st.selectbox("Buscar Empleado:", [""] + nombres, key="nov_emp")
+            categoria = st.selectbox("Categoría:", [""] + list(MOTIVOS.keys()), key="nov_cat")
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
-            motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
-            observaciones = st.text_area(" Observaciones / Diagnóstico:", height=100, key="nov_obs")
+            motivo = st.selectbox("Motivo:", [""] + motivos_disponibles, key="nov_mot")
+            observaciones = st.text_area("Observaciones / Diagnóstico:", height=100, key="nov_obs")
         
-        if st.button("💾 Guardar Novedad", type="primary"):
+        if st.button("Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
                 motivo_norm = normalizar_motivo(motivo)
@@ -459,13 +584,13 @@ with tab4:
                 novedades_actuales.append(nueva_novedad)
                 st.session_state['novedades'] = novedades_actuales
                 
-                st.success(f"✅ Novedad guardada: {nombre} - {motivo_norm}")
+                st.success(f"Noviedad guardada: {nombre} - {motivo_norm}")
                 st.rerun()
             else:
-                st.warning("⚠️ Completa todos los campos")
+                st.warning("Completa todos los campos")
         
-        st.markdown("---")
-        st.subheader(f"📋 Novedades del Día ({hoy})")
+        st.divider()
+        st.subheader(f"Novedades del Día ({hoy})")
         novedades = st.session_state.get('novedades', [])
         novedades_hoy = [n for n in novedades if len(n) >= 5 and n[4] == hoy]
         
@@ -473,7 +598,7 @@ with tab4:
             for idx, nov in enumerate(novedades_hoy):
                 motivo_mostrar = normalizar_motivo(nov[2])
                 curso = determinar_curso_por_nombre(nov[0])
-                icono_curso = "🎓" if curso == "Tercer Año" else "🛡️"
+                icono_curso = "🎓" if curso == "Tercer Año" else "️"
                 
                 col1, col2, col3, col4, col5, col6 = st.columns([2, 1, 1, 2, 1, 1])
                 with col1: st.write(f"**{nov[0]}**")
@@ -482,33 +607,33 @@ with tab4:
                 with col4: st.write(nov[3] if nov[3] else "-")
                 with col5: st.write(nov[4])
                 with col6:
-                    if st.button("🗑️", key=f"del_nov_{idx}"):
+                    if st.button("️", key=f"del_nov_{idx}"):
                         novedades_actuales = [row for row in st.session_state.get('novedades', []) if row != nov]
                         st.session_state['novedades'] = novedades_actuales
-                        st.success(f"✅ Novedad eliminada")
+                        st.success(f"Novedad eliminada")
                         st.rerun()
         else:
             st.info("No hay novedades registradas para hoy.")
     else:
-        st.warning("️ Primero importa el personal")
+        st.warning("Primero importa el personal")
 
 # ==================== TAB 5: RACIONAMIENTO ====================
 with tab5:
-    st.header("🍽️ Registro de Racionamiento")
+    st.header("Registro de Racionamiento")
     empleados = st.session_state.get('empleados', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
     
     if empleados:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
-        st.subheader("➕ Registrar Racionamiento")
+        st.subheader("Registrar Racionamiento")
         col1, col2 = st.columns(2)
         with col1:
-            empleado_sel = st.selectbox("🔍 Buscar Empleado:", [""] + nombres, key="rac_emp")
-            comida = st.selectbox("🍽️ Tipo de Comida:", ["", "Desayuno", "Almuerzo", "Merienda", "Cena"], key="rac_com")
+            empleado_sel = st.selectbox("Buscar Empleado:", [""] + nombres, key="rac_emp")
+            comida = st.selectbox("Tipo de Comida:", ["", "Desayuno", "Almuerzo", "Merienda", "Cena"], key="rac_com")
         with col2:
-            observaciones = st.text_input("📝 Observaciones:", key="rac_obs")
+            observaciones = st.text_input("Observaciones:", key="rac_obs")
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("💾 Guardar Racionamiento", type="primary"):
+            if st.button("Guardar Racionamiento", type="primary", use_container_width=True):
                 if empleado_sel and comida:
                     nombre = empleado_sel.split(" - ", 1)[1]
                     nuevo_rac = [nombre, comida, observaciones, hoy]
@@ -517,13 +642,13 @@ with tab5:
                     rac_actuales.append(nuevo_rac)
                     st.session_state['racionamiento'] = rac_actuales
                     
-                    st.success("✅ Racionamiento guardado")
+                    st.success("Racionamiento guardado")
                     st.rerun()
                 else:
-                    st.warning("⚠️ Completa todos los campos")
+                    st.warning("Completa todos los campos")
         
-        st.markdown("---")
-        st.subheader(f"📋 Racionamiento del Día ({hoy})")
+        st.divider()
+        st.subheader(f"Racionamiento del Día ({hoy})")
         racionamiento = st.session_state.get('racionamiento', [])
         rac_hoy = [r for r in racionamiento if len(r) >= 4 and r[3] == hoy]
         
@@ -533,27 +658,27 @@ with tab5:
                 if r[1] in conteo:
                     conteo[r[1]] += 1
             col1, col2, col3, col4 = st.columns(4)
-            with col1: st.metric("🥐 Desayunos", conteo["Desayuno"])
-            with col2: st.metric("🍽️ Almuerzos", conteo["Almuerzo"])
-            with col3: st.metric("☕ Meriendas", conteo["Merienda"])
-            with col4: st.metric("🌙 Cenas", conteo["Cena"])
+            with col1: st.metric("Desayunos", conteo["Desayuno"])
+            with col2: st.metric("Almuerzos", conteo["Almuerzo"])
+            with col3: st.metric("Meriendas", conteo["Merienda"])
+            with col4: st.metric("Cenas", conteo["Cena"])
             
-            st.markdown("---")
+            st.divider()
             for idx, rac in enumerate(rac_hoy):
                 col1, col2, col3, col4, col5 = st.columns([3, 2, 3, 1, 1])
                 with col1: st.write(f"**{rac[0]}**")
-                with col2: st.write(f"🍽️ {rac[1]}")
+                with col2: st.write(f"{rac[1]}")
                 with col3: st.write(rac[2] if rac[2] else "-")
                 with col4: st.write(rac[3])
                 with col5:
                     if st.button("🗑️", key=f"del_rac_{idx}"):
                         rac_actuales = [row for row in st.session_state.get('racionamiento', []) if row != rac]
                         st.session_state['racionamiento'] = rac_actuales
-                        st.success(f"✅ Racionamiento eliminado")
+                        st.success(f"Racionamiento eliminado")
                         st.rerun()
             
-            st.markdown("---")
-            if st.button("📋 Generar Minuta de Racionamiento", type="primary"):
+            st.divider()
+            if st.button("Generar Minuta de Racionamiento", type="primary", use_container_width=True):
                 minuta_rac = f"RACIONAMIENTO DEL DÍA {hoy}\n\n"
                 minuta_rac += f"Desayunos: {conteo['Desayuno']}\n"
                 minuta_rac += f"Almuerzos: {conteo['Almuerzo']}\n"
@@ -569,21 +694,21 @@ with tab5:
                             minuta_rac += f"  - {r[0]}\n"
                         minuta_rac += "\n"
                 
-                st.text_area("📄 Minuta de Racionamiento:", minuta_rac, height=300)
-                st.download_button("📥 Descargar Minuta Racionamiento (TXT)", minuta_rac, f"racionamiento_{hoy.replace('/', '')}.txt", "text/plain")
+                st.text_area("Minuta de Racionamiento:", minuta_rac, height=300)
+                st.download_button("Descargar Minuta Racionamiento (TXT)", minuta_rac, f"racionamiento_{hoy.replace('/', '')}.txt", "text/plain")
         else:
             st.info("No hay racionamiento registrado.")
     else:
-        st.warning("⚠️ Primero importa el personal")
+        st.warning("Primero importa el personal")
 
 # ==================== TAB 6: REPORTES ====================
 with tab6:
-    st.header(" Reportes y Minutas")
-    tab_rep1, tab_rep2 = st.tabs(["📋 Minuta Modelo 1", "📋 Minuta Modelo 2"])
+    st.header("Reportes y Minutas")
+    tab_rep1, tab_rep2 = st.tabs(["Minuta Modelo 1", "Minuta Modelo 2"])
     
     with tab_rep1:
-        st.subheader("📝 Minuta Informativa por Cursos")
-        if st.button(" Generar Minuta Modelo 1", type="primary"):
+        st.subheader("Minuta Informativa por Cursos")
+        if st.button("Generar Minuta Modelo 1", type="primary", use_container_width=True):
             stats = calcular_estadisticas()
             if not stats:
                 st.error("No hay datos")
@@ -599,7 +724,7 @@ with tab6:
                 minuta += f"AUSENTES / FUERA DEL INSTITUTO: {stats['ausentes_total']}\n"
                 minuta += f"FORMADOS A PRIMERA OBLIGACIÓN: {stats['presentes_0620']}\n\n"
                 
-                minuta += "✅ CURSO DE TERCER AÑO\n\n"
+                minuta += "CURSO DE TERCER AÑO\n\n"
                 minuta += f"FE: {stats['total_3']}\n"
                 minuta += f"PRESENTES EN INSTITUTO: {stats['presentes_3']}\n"
                 minuta += f"PRESENTES EN ESCUADRON: {stats['presentes_3']}\n"
@@ -611,17 +736,17 @@ with tab6:
                     items = [n for n in tercer_ano if n[2] == motivo_tipo]
                     if items:
                         if motivo_tipo == "Guardia diurna":
-                            minuta += f"️ SERVICIO DE ARMAS DIURNA: {numero_a_texto(len(items))} ASPIRANTES.\n"
+                            minuta += f"SERVICIO DE ARMAS DIURNA: {numero_a_texto(len(items))} ASPIRANTES.\n"
                         elif motivo_tipo == "Guardia nocturna":
-                            minuta += f"▫️ DESCANSO DE SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(len(items))} ASPIRANTES.\n"
+                            minuta += f"DESCANSO DE SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(len(items))} ASPIRANTES.\n"
                         elif motivo_tipo == "ART":
-                            minuta += "▫️ ART:\n"
+                            minuta += "ART:\n"
                         elif motivo_tipo == "SSD":
-                            minuta += "▫️ SIN SERVICIO EN DOMICILIO:\n"
+                            minuta += "SIN SERVICIO EN DOMICILIO:\n"
                         elif motivo_tipo == "A cuenta de LAO":
-                            minuta += "▫️ LAO: (A CUENTA DE LAO)\n"
+                            minuta += "LAO: (A CUENTA DE LAO)\n"
                         elif motivo_tipo == "Autorizado":
-                            minuta += "▫️ AUTORIZADO:\n"
+                            minuta += "AUTORIZADO:\n"
                         
                         for i, item in enumerate(items, 1):
                             if motivo_tipo == "ART":
@@ -630,7 +755,7 @@ with tab6:
                                 minuta += f"{i}. {item[0].upper()}\n"
                         minuta += "\n"
                 
-                minuta += "\n✅ CURSO AUXILIAR OPERATIVO\n\n"
+                minuta += "\nCURSO AUXILIAR OPERATIVO\n\n"
                 minuta += f"FE: {stats['total_cao']}\n"
                 minuta += f"PRESENTES EN INSTITUTO: {stats['presentes_cao']}\n"
                 minuta += f"PRESENTES EN ESCUADRON: {stats['presentes_cao']}\n"
@@ -642,17 +767,17 @@ with tab6:
                     items = [n for n in auxiliar_op if n[2] == motivo_tipo]
                     if items:
                         if motivo_tipo == "Guardia diurna":
-                            minuta += f"▫️ SERVICIO DE ARMAS DIURNO: {numero_a_texto(len(items))} ASPIRANTES.\n"
+                            minuta += f"SERVICIO DE ARMAS DIURNO: {numero_a_texto(len(items))} ASPIRANTES.\n"
                         elif motivo_tipo == "Guardia nocturna":
-                            minuta += f"▫️ DESCANSO DE SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(len(items))} ASPIRANTES.\n"
+                            minuta += f"DESCANSO DE SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(len(items))} ASPIRANTES.\n"
                         elif motivo_tipo == "ART":
-                            minuta += "▫️ ART:\n"
+                            minuta += "ART:\n"
                         elif motivo_tipo == "SSD":
-                            minuta += "▫️ SIN SERVICIO EN DOMICILIO:\n"
+                            minuta += "SIN SERVICIO EN DOMICILIO:\n"
                         elif motivo_tipo == "A cuenta de LAO":
-                            minuta += "▫️ LAO: (A CUENTA DE LAO)\n"
+                            minuta += "LAO: (A CUENTA DE LAO)\n"
                         elif motivo_tipo == "Autorizado":
-                            minuta += "▫️ AUTORIZADO:\n"
+                            minuta += "AUTORIZADO:\n"
                         
                         for i, item in enumerate(items, 1):
                             if motivo_tipo == "ART":
@@ -661,23 +786,23 @@ with tab6:
                                 minuta += f"{i}. {item[0].upper()}\n"
                         minuta += "\n"
                 
-                st.text_area("📄 Minuta Generada (copia el texto):", minuta, height=500)
-                st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_modelo1_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
+                st.text_area("Minuta Generada (copia el texto):", minuta, height=500)
+                st.download_button("Descargar Minuta (TXT)", minuta, f"minuta_modelo1_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
     
     with tab_rep2:
-        st.subheader("📋 Parte de Formación (General)")
-        if st.button("🔄 Generar Minuta Modelo 2", type="primary"):
+        st.subheader("Parte de Formación (General)")
+        if st.button("Generar Minuta Modelo 2", type="primary", use_container_width=True):
             stats = calcular_estadisticas()
             if not stats:
                 st.error("No hay datos")
             else:
                 fecha_minuta = datetime.now().strftime("%d%b%y").upper()
                 minuta = f"PARTE DE FORMACIÓN DEL ESCUADRÓN \"H\", DEL DIA {fecha_minuta}\n\n"
-                minuta += f"🔸FE: {stats['total_general']}\n"
-                minuta += f"🔶P: {stats['presentes_total']}\n"
+                minuta += f"FE: {stats['total_general']}\n"
+                minuta += f"P: {stats['presentes_total']}\n"
                 minuta += f"A: {stats['ausentes_total']}\n"
-                minuta += f"🔹FORMADOS: {stats['presentes_0620']}\n\n"
-                minuta += "⚠️ NOVEDADES:\n\n"
+                minuta += f"FORMADOS: {stats['presentes_0620']}\n\n"
+                minuta += "NOVEDADES:\n\n"
                 
                 motivos_unicos = list(set([n[2] for n in stats["novedades_hoy"]]))
                 for motivo in motivos_unicos:
@@ -698,9 +823,9 @@ with tab6:
                             minuta += f"{i}. {item[0].upper()}.\n"
                     minuta += "\n"
                 
-                st.text_area("📄 Minuta Generada (copia el texto):", minuta, height=500)
-                st.download_button(" Descargar Minuta (TXT)", minuta, f"minuta_modelo2_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
+                st.text_area("Minuta Generada (copia el texto):", minuta, height=500)
+                st.download_button("Descargar Minuta (TXT)", minuta, f"minuta_modelo2_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
 
 # Footer
-st.markdown("---")
-st.markdown("<div style='text-align: center; color: gray;'><small>NOVEDADES ESCUADRÓN H \"CABO MARCELO GODOY\" - AÑO 2026</small></div>", unsafe_allow_html=True)
+st.divider()
+st.markdown("<div style='text-align: center; color: #666;'><small>NOVEDADES ESCUADRÓN H \"CABO MARCELO GODOY\" - AÑO 2026</small></div>", unsafe_allow_html=True)
