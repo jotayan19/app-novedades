@@ -304,7 +304,7 @@ def pantalla_login():
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         
         # Logo de Gendarmería
-        st.image(LOGO_URL, width=100, use_column_width=False)
+        st.image(LOGO_URL, width=100)
         
         st.markdown('<h1 class="login-title">Acceso Restringido</h1>', unsafe_allow_html=True)
         st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
