@@ -4,7 +4,7 @@ from datetime import datetime
 import csv
 import io
 
-# ==================== CONFIGURACIÓN DE PÁGINA Y ESTILOS ====================
+# ==================== CONFIGURACIÓN ====================
 st.set_page_config(
     page_title="SISTEMA DE NOVEDADES",
     page_icon="👮‍♂️",
@@ -21,34 +21,26 @@ st.markdown("""
     .stButton > button {
         background-color: #2E5936 !important; color: white !important;
         border: 1px solid #4CAF50 !important; border-radius: 8px !important;
-        font-weight: bold !important; transition: all 0.3s ease;
+        font-weight: bold !important;
     }
-    .stButton > button:hover { background-color: #4CAF50 !important; box-shadow: 0 0 10px rgba(76, 175, 80, 0.4); }
+    .stButton > button:hover { background-color: #4CAF50 !important; }
     .stTextInput > div > div > input, .stSelectbox > div > div > div, .stTextArea > div > div > textarea {
         background-color: #2c2c2c !important; color: white !important;
         border: 1px solid #444 !important; border-radius: 8px !important;
     }
-    .stTextInput > div > div > input:focus, .stSelectbox > div > div > div:focus {
-        border-color: #4CAF50 !important; box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-    }
-    .dataframe { background-color: #1e1e1e !important; color: #e0e0e0 !important; border: 1px solid #333 !important; }
+    .dataframe { background-color: #1e1e1e !important; color: #e0e0e0 !important; }
     .dataframe th { background-color: #2E5936 !important; color: white !important; }
-    .stAlert { background-color: #2c2c2c !important; border-left: 4px solid #4CAF50 !important; color: #e0e0e0 !important; }
     .login-card {
         max-width: 500px; margin: 80px auto; padding: 40px;
         background: linear-gradient(145deg, #1e1e1e, #252525);
         border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         border: 1px solid #333; text-align: center;
     }
-    .login-title { font-size: 2.5em; font-weight: bold; color: #4CAF50 !important; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
-    .login-subtitle { font-size: 0.9em; color: #aaa !important; margin-bottom: 30px; font-style: italic; }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [data-baseweb="tab"] { background-color: #2c2c2c; border-radius: 8px 8px 0 0; color: #aaa; padding: 10px 20px; }
-    .stTabs [aria-selected="true"] { background-color: #2E5936 !important; color: white !important; border-bottom: 2px solid #4CAF50; }
+    .login-title { font-size: 2.5em; font-weight: bold; color: #4CAF50 !important; margin-bottom: 30px; text-transform: uppercase; }
     .main-title {
         text-align: center; font-size: 3.5em; font-weight: bold;
         color: #4CAF50 !important; margin-top: 20px; margin-bottom: 10px;
-        text-transform: uppercase; letter-spacing: 3px;
+        text-transform: uppercase;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -70,8 +62,8 @@ AULAS = AULAS_TERCER_ANO + AULAS_CAO
 OPCIONES_HORARIO = ["", "06:20", "07:30", "08:10", "08:30", "09:20", "09:30", "10:30", "13:50", "15:10", "16:40", "apresto en domicilio"]
 
 MOTIVOS = {
-    "Ausente fuera de la escuela": ["SSD", "ART", "Descanso de guardia", "A cuenta de LAO", "Autorizado", "LES"],
-    "Presente pero fuera del escuadron": ["Guardia diurna", "Guardia nocturna", "Formacion", "Practica de desfile"]
+    "Ausente fuera de la escuela": ["SSD", "ART", "DESCANSO DE GUARDIA", "A CUENTA DE LAO", "AUTORIZADO", "LES"],
+    "Presente pero fuera del escuadron": ["GUARDIA DIURNA", "GUARDIA NOCTURNA", "FORMACION", "PRACTICA DE DESFILE"]
 }
 
 # ==================== FUNCIONES ====================
@@ -91,10 +83,7 @@ def convertir_a_csv(datos):
 
 def normalizar_motivo(motivo):
     if not motivo: return motivo
-    motivo = str(motivo).strip().upper()
-    if motivo == "ARTE": return "ART"
-    if motivo.startswith("ART") and len(motivo) <= 5: return "ART"
-    return motivo
+    return str(motivo).strip().upper()
 
 def determinar_curso(grado):
     grado_upper = str(grado).upper()
@@ -108,7 +97,7 @@ def obtener_grado_abreviado(nombre):
         if len(emp) >= 2 and emp[1].upper().strip() == nombre.upper().strip():
             curso = determinar_curso(emp[0])
             return "ASP III" if curso == "Tercer Año" else "ASP I"
-    return "ASP III" if "DRAG" in nombre.upper() else "ASP I"
+    return "ASP I" if "DRAG" in nombre.upper() else "ASP I"
 
 def obtener_grado_por_nombre(nombre):
     empleados = st.session_state.get('empleados', [])
@@ -124,27 +113,23 @@ def determinar_curso_por_nombre(nombre):
 
 def obtener_horario_aula(aula):
     horarios = st.session_state.get('horarios', [])
+    aula_upper = aula.strip().upper()
     for hor in horarios:
-        if len(hor) >= 2 and hor[0].strip().upper() == aula.strip().upper():
+        if len(hor) >= 2 and hor[0].strip().upper() == aula_upper:
             return hor[1]
     return ""
 
 def numero_a_texto(numero):
     numeros = {
-        1: "UNO (01)", 2: "DOS (02)", 3: "TRES (03)", 4: "CUATRO (04)",
+        0: "CERO (00)", 1: "UNO (01)", 2: "DOS (02)", 3: "TRES (03)", 4: "CUATRO (04)",
         5: "CINCO (05)", 6: "SEIS (06)", 7: "SIETE (07)", 8: "OCHO (08)",
         9: "NUEVE (09)", 10: "DIEZ (10)", 11: "ONCE (11)", 12: "DOCE (12)",
         13: "TRECE (13)", 14: "CATORCE (14)", 15: "QUINCE (15)", 16: "DIECISEIS (16)",
         17: "DIECISIETE (17)", 18: "DIECIOCHO (18)", 19: "DIECINUEVE (19)", 20: "VEINTE (20)",
         21: "VEINTIUNO (21)", 22: "VEINTIDOS (22)", 23: "VEINTITRES (23)", 24: "VEINTICUATRO (24)",
-        25: "VEINTICINCO (25)"
+        25: "VEINTICINCO (25)", 41: "CUARENTA Y UNO (41)"
     }
-    return numeros.get(numero, str(numero).zfill(2))
-
-def formato_numero_minuta(numero):
-    if numero == 0:
-        return "00"
-    return numero_a_texto(numero)
+    return numeros.get(numero, f"{numero:02d}")
 
 def formato_nombre_apellido(nombre_completo):
     nombre_completo = nombre_completo.strip().upper()
@@ -173,35 +158,32 @@ def calcular_estadisticas():
     
     if not empleados: return None
     
+    total_general = len(empleados)
     total_3 = sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año")
     total_cao = sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo")
-    total_general = len(empleados)
     
+    # Contar ausentes por novedades
     ausentes_novedades = len(novedades_hoy)
     
-    ausentes_apresto = 0
-    for emp in empleados:
-        if len(emp) >= 5:
-            aula = emp[4].strip().upper()
-            horario = obtener_horario_aula(aula)
-            if horario == "apresto en domicilio":
-                ausentes_apresto += 1
+    # Contar ausentes por apresto
+    ausentes_apresto = sum(1 for e in empleados if len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
     
     ausentes_total = ausentes_novedades + ausentes_apresto
-    
-    # ACÁ ESTABAN LAS VARIABLES QUE FALTABAN - AHORA CORREGIDAS
-    ausentes_3 = sum(1 for n in novedades_hoy if determinar_curso_por_nombre(n[0]) == "Tercer Año") + sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año" and obtener_horario_aula(e[4].strip().upper()) == "apresto en domicilio")
-    ausentes_cao = sum(1 for n in novedades_hoy if determinar_curso_por_nombre(n[0]) == "Auxiliar Operativo") + sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo" and obtener_horario_aula(e[4].strip().upper()) == "apresto en domicilio")
-    
     presentes_total = total_general - ausentes_total
+    
+    # Calcular por curso
+    ausentes_3_novedades = sum(1 for n in novedades_hoy if determinar_curso_por_nombre(n[0]) == "Tercer Año")
+    ausentes_3_apresto = sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año" and len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
+    ausentes_3 = ausentes_3_novedades + ausentes_3_apresto
+    
+    ausentes_cao_novedades = sum(1 for n in novedades_hoy if determinar_curso_por_nombre(n[0]) == "Auxiliar Operativo")
+    ausentes_cao_apresto = sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo" and len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
+    ausentes_cao = ausentes_cao_novedades + ausentes_cao_apresto
+    
     presentes_3 = total_3 - ausentes_3
     presentes_cao = total_cao - ausentes_cao
     
-    formados_0620_3 = 0
-    formados_0620_cao = 0
-    ausentes_0620_3 = 0
-    ausentes_0620_cao = 0
-    
+    # Aulas dict
     aulas_dict = {}
     for emp in empleados:
         if len(emp) >= 5:
@@ -216,42 +198,36 @@ def calcular_estadisticas():
             aulas_dict[aula]["total"] += 1
             
             tiene_novedad = any(n[0].upper().strip() == nombre.upper().strip() for n in novedades_hoy)
-            if tiene_novedad:
+            if tiene_novedad or horario == "apresto en domicilio":
                 aulas_dict[aula]["ausentes"] += 1
-            
-            if horario == "apresto en domicilio":
-                aulas_dict[aula]["ausentes"] += 1
-            
-            if horario == "06:20":
-                if curso == "Tercer Año":
-                    formados_0620_3 += 1
-                    if tiene_novedad: ausentes_0620_3 += 1
-                else:
-                    formados_0620_cao += 1
-                    if tiene_novedad: ausentes_0620_cao += 1
     
-    total_0620 = sum(info["total"] for info in aulas_dict.values() if info["horario"] == "06:20")
-    ausentes_0620 = sum(info["ausentes"] for info in aulas_dict.values() if info["horario"] == "06:20")
-    presentes_0620 = total_0620 - ausentes_0620
+    # Calcular formados 06:20
+    presentes_0620 = sum(1 for e in empleados if len(e) >= 5 and obtener_horario_aula(e[4]) == "06:20" and not any(n[0].upper().strip() == e[1].upper().strip() for n in novedades_hoy))
     
-    total_dif = sum(info["total"] for info in aulas_dict.values() if info["horario"] not in ["06:20", "", "apresto en domicilio"])
-    ausentes_dif = sum(info["ausentes"] for info in aulas_dict.values() if info["horario"] not in ["06:20", "", "apresto en domicilio"])
-    presentes_dif = total_dif - ausentes_dif
+    # HORARIO DIFERENCIADO: TODAS LAS AULAS QUE NO SON 06:20 NI APRESTO
+    aulas_diferenciado = {}
+    total_diferenciado = 0
+    for aula, info in aulas_dict.items():
+        if info["horario"] and info["horario"] != "06:20" and info["horario"] != "apresto en domicilio":
+            presentes_aula = info["total"] - info["ausentes"]
+            aulas_diferenciado[aula] = {"total": presentes_aula, "horario": info["horario"]}
+            total_diferenciado += presentes_aula
     
-    aulas_apresto = {aula: info["total"] for aula, info in aulas_dict.items() if info["horario"] == "apresto en domicilio"}
-    total_apresto = sum(aulas_apresto.values())
-    
-    aulas_diferenciado = {aula: {"total": info["total"], "horario": info["horario"]} for aula, info in aulas_dict.items() if info["horario"] not in ["06:20", "", "apresto en domicilio"]}
+    # APRESTOS
+    aulas_apresto = {}
+    total_apresto = 0
+    for aula, info in aulas_dict.items():
+        if info["horario"] == "apresto en domicilio":
+            aulas_apresto[aula] = info["total"]
+            total_apresto += info["total"]
     
     return {
         "total_general": total_general, "total_3": total_3, "total_cao": total_cao,
         "presentes_total": presentes_total, "presentes_3": presentes_3, "presentes_cao": presentes_cao,
         "ausentes_total": ausentes_total, "ausentes_3": ausentes_3, "ausentes_cao": ausentes_cao,
         "presentes_0620": presentes_0620,
-        "formados_0620_3": formados_0620_3 - ausentes_0620_3,
-        "formados_0620_cao": formados_0620_cao - ausentes_0620_cao,
         "aulas_dict": aulas_dict, "novedades_hoy": novedades_hoy,
-        "ingreso_diferenciado": presentes_dif,
+        "total_diferenciado": total_diferenciado,
         "aulas_diferenciado": aulas_diferenciado,
         "total_apresto": total_apresto,
         "aulas_apresto": aulas_apresto
@@ -278,11 +254,9 @@ def pantalla_login():
                     st.error("❌ Credenciales incorrectas.")
         
         st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('<div style="text-align: center; color: #666; margin-top: 20px; font-size: 0.8em;">Sistema de Gendarmería Nacional Argentina © 2026</div>', unsafe_allow_html=True)
 
 # ==================== INICIALIZACIÓN ====================
 if 'logueado' not in st.session_state: st.session_state['logueado'] = False
-
 if not st.session_state['logueado']:
     pantalla_login()
     st.stop()
@@ -292,7 +266,6 @@ if 'horarios' not in st.session_state: st.session_state['horarios'] = cargar_csv
 if 'novedades' not in st.session_state: st.session_state['novedades'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['novedades'])
 if 'racionamiento' not in st.session_state: st.session_state['racionamiento'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['racionamiento'])
 if 'plan_llamada' not in st.session_state: st.session_state['plan_llamada'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['plan_llamada'])
-
 if 'nov_counter' not in st.session_state: st.session_state['nov_counter'] = 0
 if 'rac_counter' not in st.session_state: st.session_state['rac_counter'] = 0
 
@@ -306,43 +279,27 @@ with st.sidebar:
     st.markdown('<h2 style="color: #4CAF50; text-align: center;">PANEL DE CONTROL</h2>', unsafe_allow_html=True)
     st.markdown("---")
     c1, c2 = st.columns(2)
-    with c1: st.metric("📅 Fecha", datetime.now().strftime('%d/%m/%Y'))
-    with c2: st.metric(" Hora", datetime.now().strftime('%H:%M:%S'))
+    with c1: st.metric(" Fecha", datetime.now().strftime('%d/%m/%Y'))
+    with c2: st.metric("🕐 Hora", datetime.now().strftime('%H:%M:%S'))
     st.markdown("---")
     
     stats = calcular_estadisticas()
     if stats:
-        st.markdown("#### 📊 Estadísticas del Día")
         st.metric("👥 Fuerza Efectiva", stats["total_general"])
         st.metric("✅ Presentes", stats["presentes_total"])
         st.metric("📋 Ausentes", stats["ausentes_total"])
-        st.divider()
-        st.metric("🎓 Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
-        st.metric("🛡️ Aux. Operativo", f"{stats['presentes_cao']}/{stats['total_cao']}")
     
     st.markdown("---")
-    st.markdown("#### 💾 Gestión de Datos")
-    st.caption("⚠️ En la nube los datos son temporales.")
-    
     if st.download_button("📥 Descargar empleados.csv", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True): pass
-    if st.download_button(" Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True): pass
-        
-    st.divider()
-    if st.button("🔄 Reiniciar Datos", type="secondary", use_container_width=True):
-        st.session_state['empleados'] = []
-        st.session_state['novedades'] = []
-        st.session_state['racionamiento'] = []
-        st.success("Datos reiniciados.")
-        st.rerun()
-        
-    st.divider()
+    if st.download_button("📥 Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True): pass
+    
     if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
         st.session_state['logueado'] = False
         st.rerun()
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
+    "👥 Personal", "🏫 Aulas/Horarios", " Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
@@ -350,8 +307,6 @@ with tab1:
     st.header("Gestión de Personal")
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.subheader("📤 Importar Excel")
-        st.info("Usa el archivo `listaescuadronh.xlsx`")
         archivo_excel = st.file_uploader("Selecciona tu archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
         if archivo_excel is not None:
             if st.button("💾 Importar Personal", type="primary", use_container_width=True):
@@ -365,28 +320,23 @@ with tab1:
                         dni = str(row.get('DNI', '')).strip()
                         ce = str(row.get('CE', '')).strip()
                         aula = str(row.get('AULA', '')).strip().upper()
-                        if grado and nombre and str(grado).lower() != 'nan' and str(nombre).lower() != 'nan' and str(grado).upper() != 'GRADO':
+                        if grado and nombre and str(grado).upper() != 'GRADO':
                             empleados.append([grado, nombre, dni, ce, aula])
                     if empleados:
                         st.session_state['empleados'] = empleados
-                        st.success(f"✅ Se importaron {len(empleados)} empleados correctamente")
+                        st.success(f"✅ Se importaron {len(empleados)} empleados")
                         st.rerun()
-                except Exception as e: st.error(f"Error al leer el Excel: {str(e)}")
+                except Exception as e: st.error(f"Error: {str(e)}")
     with col2:
-        st.subheader("📋 Personal Registrado")
         empleados = st.session_state.get('empleados', [])
         if empleados:
             df_empleados = pd.DataFrame(empleados, columns=['Grado', 'Apellido y Nombre', 'DNI', 'CE', 'Aula'])
             st.dataframe(df_empleados, use_container_width=True, height=400)
-            st.write(f"**Total:** {len(empleados)} | **3° Año:** {sum(1 for e in empleados if determinar_curso(e[0])=='Tercer Año')} | **CAO:** {sum(1 for e in empleados if determinar_curso(e[0])=='Auxiliar Operativo')}")
-        else: st.info("No hay personal registrado. Importa un Excel para comenzar.")
+        else: st.info("No hay personal registrado.")
 
 # ==================== TAB 2: HORARIOS ====================
 with tab2:
-    st.header("Configuración de Horarios de Aulas")
-    st.info("🎓 Tercer Año: 23TT, 18TM, 23TM, 24TM, 26TM, 28TM | 🛡️ CAO: 7TT, 8TT")
-    st.warning("⚠️ Si seleccionas 'Apresto en domicilio', el aula se contará como ausente.")
-    
+    st.header("Configuración de Horarios")
     horarios_actuales = st.session_state.get('horarios', [])
     horarios_dict = {h[0]: h[1] for h in horarios_actuales if len(h) >= 2}
     
@@ -398,96 +348,37 @@ with tab2:
                 horario_actual = horarios_dict.get(aula, "")
                 index_val = 0
                 if horario_actual in OPCIONES_HORARIO: index_val = OPCIONES_HORARIO.index(horario_actual)
-                
                 horario = st.selectbox(f"Aula {aula}", OPCIONES_HORARIO, index=index_val, key=f"horario_{aula}")
                 if horario: nuevos_horarios.append([aula, horario])
         
         if st.form_submit_button(" Guardar Horarios", type="primary", use_container_width=True):
             st.session_state['horarios'] = nuevos_horarios
-            st.success("✅ Horarios guardados en memoria")
+            st.success("✅ Horarios guardados")
             st.rerun()
-
-    st.divider()
-    st.subheader("Reporte de Aulas")
-    stats = calcular_estadisticas()
-    if stats:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("#### ✅ Primera Obligación (06:20)")
-            st.metric("Total", sum(info["total"] for info in stats["aulas_dict"].values() if info["horario"]=="06:20"))
-            st.metric("Presentes", sum(info["total"]-info["ausentes"] for info in stats["aulas_dict"].values() if info["horario"]=="06:20"))
-        with col2:
-            st.markdown("#### ⏰ Horario Diferenciado")
-            st.metric("Total", sum(info["total"] for info in stats["aulas_dict"].values() if info["horario"] not in ["06:20", "", "apresto en domicilio"]))
-            st.metric("Presentes", sum(info["total"]-info["ausentes"] for info in stats["aulas_dict"].values() if info["horario"] not in ["06:20", "", "apresto en domicilio"]))
-        
-        datos_aulas = [{"Aula": a, "Curso": i["curso"], "Horario": i["horario"] if i["horario"] else "Sin asignar", "FE": i["total"], "P": i["total"]-i["ausentes"], "A": i["ausentes"]} for a, i in sorted(stats["aulas_dict"].items())]
-        st.dataframe(pd.DataFrame(datos_aulas), use_container_width=True)
 
 # ==================== TAB 3: PLAN LLAMADA ====================
 with tab3:
     st.header("Plan de Llamada")
-    st.info("Información detallada de cada aspirante")
     empleados = st.session_state.get('empleados', [])
     if empleados:
-        st.subheader("Buscar Aspirante")
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
         empleado_sel = st.selectbox("Seleccionar Aspirante:", [""] + nombres)
         if empleado_sel:
             nombre = empleado_sel.split(" - ", 1)[1]
-            grado = empleado_sel.split(" - ", 1)[0]
-            plan_datos = st.session_state.get('plan_llamada', [])
-            info_detallada = None
-            for row in plan_datos:
-                if len(row) >= 2 and row[1].upper().strip() == nombre.upper().strip():
-                    info_detallada = row
-                    break
-            st.divider()
-            st.subheader(f"Información de: {nombre}")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**Grado:** {grado}")
-                st.markdown(f"**DNI:** {next((e[2] for e in empleados if e[1].upper().strip() == nombre.upper().strip()), 'N/A')}")
-                st.markdown(f"**CE:** {next((e[3] for e in empleados if e[1].upper().strip() == nombre.upper().strip()), 'N/A')}")
-                st.markdown(f"**Aula:** {next((e[4] for e in empleados if e[1].upper().strip() == nombre.upper().strip()), 'N/A')}")
-            with col2:
-                if info_detallada and len(info_detallada) >= 6:
-                    st.markdown(f"**Domicilio:** {info_detallada[2] if len(info_detallada) > 2 else 'N/A'}")
-                    st.markdown(f"**Teléfono:** {info_detallada[3] if len(info_detallada) > 3 else 'N/A'}")
-                    st.markdown(f"**Contacto Emergencia:** {info_detallada[4] if len(info_detallada) > 4 else 'N/A'}")
-                    st.markdown(f"**Tel. Emergencia:** {info_detallada[5] if len(info_detallada) > 5 else 'N/A'}")
-                else: st.warning("⚠️ No hay información detallada cargada.")
-            st.divider()
-            if info_detallada:
-                info_texto = f"FICHA PERSONAL\n\nGrado: {grado}\nNombre: {nombre}\n"
-                info_texto += f"DNI: {next((e[2] for e in empleados if e[1].upper().strip() == nombre.upper().strip()), 'N/A')}\n"
-                info_texto += f"CE: {next((e[3] for e in empleados if e[1].upper().strip() == nombre.upper().strip()), 'N/A')}\n"
-                info_texto += f"Aula: {next((e[4] for e in empleados if e[1].upper().strip() == nombre.upper().strip()), 'N/A')}\n"
-                if len(info_detallada) >= 6:
-                    info_texto += f"\nDomicilio: {info_detallada[2]}\nTeléfono: {info_detallada[3]}\n"
-                    info_texto += f"Contacto Emergencia: {info_detallada[4]}\nTel. Emergencia: {info_detallada[5]}\n"
-                st.download_button("📥 Descargar Ficha Personal (TXT)", info_texto, f"ficha_{nombre.replace(' ', '_')}.txt", "text/plain")
-    else: st.warning("⚠️ Primero debes importar el personal")
+            st.write(f"**Nombre:** {nombre}")
 
 # ==================== TAB 4: NOVEDADES ====================
 with tab4:
     st.header("Registro de Novedades")
     empleados = st.session_state.get('empleados', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
-    stats = calcular_estadisticas()
-    if stats:
-        col1, col2, col3 = st.columns(3)
-        with col1: st.metric(" Ausentes Total", stats["ausentes_total"])
-        with col2: st.metric("🎓 Ausentes Tercer Año", stats["ausentes_3"])
-        with col3: st.metric("️ Ausentes Aux. Operativo", stats["ausentes_cao"])
     
     if empleados:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
-        st.subheader("Registrar Nueva Novedad")
         col1, col2 = st.columns(2)
         with col1:
             empleado_sel = st.selectbox("🔍 Buscar Empleado:", [""] + nombres, key=f"nov_emp_{st.session_state['nov_counter']}")
-            categoria = st.selectbox(" Categoría:", [""] + list(MOTIVOS.keys()), key="nov_cat")
+            categoria = st.selectbox("📂 Categoría:", [""] + list(MOTIVOS.keys()), key="nov_cat")
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
             motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
@@ -496,39 +387,11 @@ with tab4:
         if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
-                motivo_norm = normalizar_motivo(motivo)
-                nueva_novedad = [nombre, categoria, motivo_norm, observaciones, hoy]
-                novedades_actuales = st.session_state.get('novedades', [])
-                novedades_actuales.append(nueva_novedad)
-                st.session_state['novedades'] = novedades_actuales
+                nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
+                st.session_state['novedades'].append(nueva_novedad)
                 st.session_state['nov_counter'] += 1
-                st.success(f"✅ Novedad guardada: {nombre} - {motivo_norm}")
+                st.success("✅ Novedad guardada")
                 st.rerun()
-            else: st.warning("⚠️ Completa todos los campos")
-        
-        st.divider()
-        st.subheader(f"📋 Novedades del Día ({hoy})")
-        novedades = st.session_state.get('novedades', [])
-        novedades_hoy = [n for n in novedades if len(n) >= 5 and n[4] == hoy]
-        if novedades_hoy:
-            for idx, nov in enumerate(novedades_hoy):
-                motivo_mostrar = normalizar_motivo(nov[2])
-                curso = determinar_curso_por_nombre(nov[0])
-                icono_curso = "🎓" if curso == "Tercer Año" else "🛡️"
-                col1, col2, col3, col4, col5, col6 = st.columns([2, 1, 1, 2, 1, 1])
-                with col1: st.write(f"**{nov[0]}**")
-                with col2: st.write(f"{icono_curso} {curso[:3]}")
-                with col3: st.write(motivo_mostrar)
-                with col4: st.write(nov[3] if nov[3] else "-")
-                with col5: st.write(nov[4])
-                with col6:
-                    if st.button("🗑️", key=f"del_nov_{idx}"):
-                        novedades_actuales = [row for row in st.session_state.get('novedades', []) if row != nov]
-                        st.session_state['novedades'] = novedades_actuales
-                        st.success(f"✅ Novedad eliminada")
-                        st.rerun()
-        else: st.info("No hay novedades registradas para hoy.")
-    else: st.warning("⚠️ Primero importa el personal")
 
 # ==================== TAB 5: RACIONAMIENTO ====================
 with tab5:
@@ -538,257 +401,143 @@ with tab5:
     
     if empleados:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
-        st.subheader("Registrar Racionamiento (Almuerzo)")
         col1, col2 = st.columns(2)
         with col1:
-            empleado_sel = st.selectbox("🔍 Buscar Empleado:", [""] + nombres, key=f"rac_emp_{st.session_state['rac_counter']}")
+            empleado_sel = st.selectbox(" Buscar Empleado:", [""] + nombres, key=f"rac_emp_{st.session_state['rac_counter']}")
         with col2:
             observaciones = st.text_input("📝 Observaciones:", key="rac_obs")
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("💾 Guardar Almuerzo", type="primary", use_container_width=True):
+            if st.button(" Guardar Almuerzo", type="primary", use_container_width=True):
                 if empleado_sel:
                     nombre = empleado_sel.split(" - ", 1)[1]
-                    nuevo_rac = [nombre, "Almuerzo", observaciones, hoy]
-                    rac_actuales = st.session_state.get('racionamiento', [])
-                    rac_actuales.append(nuevo_rac)
-                    st.session_state['racionamiento'] = rac_actuales
+                    st.session_state['racionamiento'].append([nombre, "Almuerzo", observaciones, hoy])
                     st.session_state['rac_counter'] += 1
                     st.success("✅ Almuerzo registrado")
                     st.rerun()
-                else: st.warning("⚠️ Selecciona un empleado")
         
-        st.divider()
-        st.subheader(f"📋 Racionamiento del Día ({hoy})")
-        racionamiento = st.session_state.get('racionamiento', [])
-        rac_hoy = [r for r in racionamiento if len(r) >= 4 and r[3] == hoy]
-        
+        rac_hoy = [r for r in st.session_state.get('racionamiento', []) if len(r) >= 4 and r[3] == hoy]
         if rac_hoy:
-            conteo = {"Almuerzo": 0}
-            for r in rac_hoy:
-                if r[1] in conteo: conteo[r[1]] += 1
-            
-            st.metric("🍽️ Total Almuerzos Registrados", conteo["Almuerzo"])
-            st.divider()
-            
-            for idx, rac in enumerate(rac_hoy):
-                col1, col2, col3, col4 = st.columns([3, 2, 3, 1])
-                with col1: st.write(f"**{rac[0]}**")
-                with col2: st.write(f"️ {rac[1]}")
-                with col3: st.write(rac[2] if rac[2] else "-")
-                with col4:
-                    if st.button("🗑️", key=f"del_rac_{idx}"):
-                        rac_actuales = [row for row in st.session_state.get('racionamiento', []) if row != rac]
-                        st.session_state['racionamiento'] = rac_actuales
-                        st.success(f"✅ Racionamiento eliminado")
-                        st.rerun()
-            
-            st.divider()
-            if st.button(" Generar Minuta de Racionamiento", type="primary", use_container_width=True):
-                minuta_rac = f"RACIONAMIENTO DEL DÍA {hoy}\n\n"
-                minuta_rac += f"Total Almuerzos: {conteo['Almuerzo']}\n\n"
-                minuta_rac += "LISTADO:\n"
-                for r in rac_hoy:
-                    grado_abr = obtener_grado_abreviado(r[0])
-                    minuta_rac += f"  - {grado_abr} {r[0]}\n"
-                
-                st.text_area("📄 Minuta de Racionamiento:", minuta_rac, height=300)
-                st.download_button("📥 Descargar Minuta Racionamiento (TXT)", minuta_rac, f"racionamiento_{hoy.replace('/', '')}.txt", "text/plain")
-        else: st.info("No hay racionamiento registrado.")
-    else: st.warning("⚠️ Primero importa el personal")
+            st.write(f"**Total Almuerzos:** {len(rac_hoy)}")
+            for rac in rac_hoy:
+                st.write(f"- {rac[0]}")
 
 # ==================== TAB 6: FE POR AULA ====================
 with tab6:
     st.header("📊 Fuerza Efectiva por Aula")
-    st.info("Detalle de presentes y ausentes por cada aula.")
-    
     stats = calcular_estadisticas()
     if stats and stats['aulas_dict']:
-        col1, col2, col3 = st.columns(3)
-        with col1: st.metric("👥 Total General", stats['total_general'])
-        with col2: st.metric("✅ Total Presentes", stats['presentes_total'])
-        with col3: st.metric("📋 Total Ausentes", stats['ausentes_total'])
-        
-        st.divider()
-        
-        st.subheader("Detalle por Aula")
-        datos_aulas = []
-        for aula, info in sorted(stats['aulas_dict'].items()):
-            presentes = info['total'] - info['ausentes']
-            datos_aulas.append({
-                "Aula": aula,
-                "Curso": info['curso'],
-                "Horario": info['horario'] if info['horario'] else "Sin asignar",
-                "FE (Total)": info['total'],
-                "Presentes": presentes,
-                "Ausentes": info['ausentes']
-            })
-        
-        df_aulas = pd.DataFrame(datos_aulas)
-        st.dataframe(df_aulas, use_container_width=True, height=400)
-        
-        st.divider()
-        st.subheader("Resumen por Curso")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("####  Tercer Año")
-            total_3 = sum(info['total'] for info in stats['aulas_dict'].values() if info['curso'] == 'Tercer Año')
-            ausentes_3 = sum(info['ausentes'] for info in stats['aulas_dict'].values() if info['curso'] == 'Tercer Año')
-            st.metric("FE", total_3)
-            st.metric("Presentes", total_3 - ausentes_3)
-            st.metric("Ausentes", ausentes_3)
-        with col2:
-            st.markdown("#### ️ Auxiliar Operativo")
-            total_cao = sum(info['total'] for info in stats['aulas_dict'].values() if info['curso'] == 'Auxiliar Operativo')
-            ausentes_cao = sum(info['ausentes'] for info in stats['aulas_dict'].values() if info['curso'] == 'Auxiliar Operativo')
-            st.metric("FE", total_cao)
-            st.metric("Presentes", total_cao - ausentes_cao)
-            st.metric("Ausentes", ausentes_cao)
-    else:
-        st.info("No hay datos disponibles.")
+        datos = [{"Aula": a, "FE": i["total"], "Horario": i["horario"] or "Sin asignar", "P": i["total"]-i["ausentes"], "A": i["ausentes"]} for a, i in sorted(stats["aulas_dict"].items())]
+        st.dataframe(pd.DataFrame(datos), use_container_width=True)
 
-# ==================== TAB 7: REPORTES ====================
+# ==================== TAB 7: REPORTES - MINUTA ====================
 with tab7:
     st.header("Reportes y Minutas")
-    tab_rep1, tab_rep2 = st.tabs(["Minuta Institucional", "Parte de Formación (General)"])
     
-    with tab_rep1:
-        st.subheader("Minuta Institucional Esc H")
-        if st.button("🔄 Generar Minuta Institucional", type="primary", use_container_width=True):
-            stats = calcular_estadisticas()
-            if not stats: st.error("No hay datos")
-            else:
-                fecha_minuta = datetime.now().strftime("%d/%m/%Y")
-                todas_novedades = stats["novedades_hoy"]
-                racionamiento = st.session_state.get('racionamiento', [])
-                rac_hoy = [r for r in racionamiento if len(r) >= 4 and r[3] == fecha_minuta]
-                
-                cant_ssd = len([n for n in todas_novedades if n[2] == "SSD"])
-                cant_aut = len([n for n in todas_novedades if n[2] == "Autorizado"])
-                cant_lao_cuenta = len([n for n in todas_novedades if n[2] == "A cuenta de LAO"])
-                cant_lao26 = len([n for n in todas_novedades if "LAO26" in n[2] or n[2] == "LAO"])
-                cant_les = len([n for n in todas_novedades if n[2] == "LES"])
-                cant_descanso_guardia = len([n for n in todas_novedades if n[2] == "Descanso de guardia"])
-                cant_guardia_diur = len([n for n in todas_novedades if n[2] == "Guardia diurna"])
-                
-                def obtener_lista_enumerada(motivo):
-                    nombres = [n for n in todas_novedades if n[2] == motivo]
-                    if not nombres:
-                        return ""
-                    lista = []
-                    for i, n in enumerate(nombres, 1):
-                        grado_abr = obtener_grado_abreviado(n[0])
-                        nombre_formateado = formato_nombre_apellido(n[0])
-                        lista.append(f"{i}. {grado_abr} {nombre_formateado}")
-                    return "\n".join(lista)
-                
-                minuta = f"NOVEDADES ESC \"H\" FECHA: {fecha_minuta}\n"
-                minuta += f"FE: {stats['total_general']}\n"
-                minuta += f"P: {stats['presentes_total']}\n"
-                minuta += f"A: {stats['ausentes_total']}\n"
-                minuta += f"\n\n"
-                minuta += f"FORMADOS PRIMERA OBLIGACIÓN: {formato_numero_minuta(stats['presentes_0620'])}\n"
-                minuta += f"\n\n"
-                minuta += f"INGRESO HORARIO DIFERENCIADO: {formato_numero_minuta(stats['ingreso_diferenciado'])}\n"
-                
-                if stats['aulas_diferenciado']:
-                    minuta += f"\n\n"
-                    for aula, info in sorted(stats['aulas_diferenciado'].items()):
-                        minuta += f"  - Aula {aula}: {info['total']} aspirantes - Horario {info['horario']}\n"
-                
-                minuta += f"\n\n"
-                
-                total_apresto = stats['total_apresto']
-                minuta += f"APRESTOS EN SUS DOMICILIOS: {formato_numero_minuta(total_apresto)} ()\n"
-                if stats['aulas_apresto']:
-                    for aula, cantidad in sorted(stats['aulas_apresto'].items()):
-                        minuta += f"  - Aula {aula}: {cantidad} aspirantes\n"
-                minuta += f"\n\n"
-                
-                lista_ssd = obtener_lista_enumerada("SSD")
-                if lista_ssd:
-                    minuta += f"SSD: {formato_numero_minuta(cant_ssd)}.-\n{lista_ssd}\n"
-                else:
-                    minuta += f"SSD: {formato_numero_minuta(cant_ssd)}.-\n"
-                minuta += f"\n\n"
-                
-                lista_aut = obtener_lista_enumerada("Autorizado")
-                if lista_aut:
-                    minuta += f"AUTORIZADOS: {formato_numero_minuta(cant_aut)}.-\n{lista_aut}\n"
-                else:
-                    minuta += f"AUTORIZADOS: {formato_numero_minuta(cant_aut)}.-\n"
-                minuta += f"\n\n"
-                
-                lista_lao_cuenta = obtener_lista_enumerada("A cuenta de LAO")
-                if lista_lao_cuenta:
-                    minuta += f"A CUENTA DE LAO26: {formato_numero_minuta(cant_lao_cuenta)}.-\n{lista_lao_cuenta}\n"
-                else:
-                    minuta += f"A CUENTA DE LAO26: {formato_numero_minuta(cant_lao_cuenta)}.-\n"
-                minuta += f"\n\n"
-                
-                lista_lao26 = obtener_lista_enumerada("LAO")
-                if lista_lao26:
-                    minuta += f"LAO26: {formato_numero_minuta(cant_lao26)}.-\n{lista_lao26}\n"
-                else:
-                    minuta += f"LAO26: {formato_numero_minuta(cant_lao26)}.-\n"
-                minuta += f"\n\n"
-                
-                lista_les = obtener_lista_enumerada("LES")
-                if lista_les:
-                    minuta += f"LES: {formato_numero_minuta(cant_les)}.-\n{lista_les}\n"
-                else:
-                    minuta += f"LES: {formato_numero_minuta(cant_les)}.-\n"
-                minuta += f"\n\n"
-                
-                lista_descanso = obtener_lista_enumerada("Descanso de guardia")
-                if lista_descanso:
-                    minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {formato_numero_minuta(cant_descanso_guardia)} ().-\n{lista_descanso}\n"
-                else:
-                    minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {formato_numero_minuta(cant_descanso_guardia)} ().-\n"
-                minuta += f"\n\n"
-                
-                lista_diur = obtener_lista_enumerada("Guardia diurna")
-                if lista_diur:
-                    minuta += f"SERVICIO DE ARMAS DIURNO: {formato_numero_minuta(cant_guardia_diur)} ()\n{lista_diur}\n"
-                else:
-                    minuta += f"SERVICIO DE ARMAS DIURNO: {formato_numero_minuta(cant_guardia_diur)} ()\n"
-                minuta += f"\n\n"
-                
-                minuta += f"RACIONAMIENTO: {formato_numero_minuta(len(rac_hoy))}\n"
-                
-                st.text_area("📄 Minuta Generada (copia el texto):", minuta, height=600)
-                st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_inst_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
-    
-    with tab_rep2:
-        st.subheader("Parte de Formación (General)")
-        if st.button("🔄 Generar Minuta Modelo 2", type="primary", use_container_width=True):
-            stats = calcular_estadisticas()
-            if not stats: st.error("No hay datos")
-            else:
-                fecha_minuta = datetime.now().strftime("%d%b%y").upper()
-                minuta = f"PARTE DE FORMACIÓN DEL ESCUADRÓN \"H\", DEL DIA {fecha_minuta}\n\n"
-                minuta += f"FE: {stats['total_general']}\n"
-                minuta += f"P: {stats['presentes_total']}\n"
-                minuta += f"A: {stats['ausentes_total']}\n"
-                minuta += f"FORMADOS: {stats['presentes_0620']}\n\n"
-                minuta += "NOVEDADES:\n\n"
-                
-                motivos_unicos = list(set([n[2] for n in stats["novedades_hoy"]]))
-                for motivo in motivos_unicos:
-                    items = [n for n in stats["novedades_hoy"] if n[2] == motivo]
-                    if motivo == "Guardia diurna": minuta += f"- SERVICIO DE ARMAS DIURNO: {numero_a_texto(len(items))} ASP DE III Y CAO.\n\n"
-                    elif motivo == "Guardia nocturna": minuta += f"- DESCANSO DE SERVICIO DE ARMA NOCTURNO: {numero_a_texto(len(items))} ASP.\n\n"
-                    elif motivo == "ART": minuta += f"ART: {numero_a_texto(len(items))} ASP.\n\n"
-                    else: minuta += f"- {motivo.upper()}: {numero_a_texto(len(items))} ASP.\n\n"
-                    
-                    for i, item in enumerate(items, 1):
-                        grado_abr = obtener_grado_abreviado(item[0])
-                        if motivo == "ART": minuta += f"{i}. {grado_abr} {item[0].upper()} DESDE {item[4]}.\n"
-                        else: minuta += f"{i}. {grado_abr} {item[0].upper()}.\n"
-                    minuta += "\n"
-                
-                st.text_area("📄 Minuta Generada (copia el texto):", minuta, height=500)
-                st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_modelo2_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
+    if st.button("🔄 Generar Minuta Institucional", type="primary", use_container_width=True):
+        stats = calcular_estadisticas()
+        if not stats: st.error("No hay datos")
+        else:
+            fecha_minuta = datetime.now().strftime("%d/%m/%Y")
+            todas_novedades = stats["novedades_hoy"]
+            racionamiento = st.session_state.get('racionamiento', [])
+            rac_hoy = [r for r in racionamiento if len(r) >= 4 and r[3] == fecha_minuta]
+            
+            # Conteos
+            cant_ssd = len([n for n in todas_novedades if n[2] == "SSD"])
+            cant_aut = len([n for n in todas_novedades if n[2] == "AUTORIZADO"])
+            cant_lao_cuenta = len([n for n in todas_novedades if n[2] == "A CUENTA DE LAO"])
+            cant_lao26 = len([n for n in todas_novedades if n[2] == "LAO"])
+            cant_les = len([n for n in todas_novedades if n[2] == "LES"])
+            cant_descanso = len([n for n in todas_novedades if n[2] == "DESCANSO DE GUARDIA"])
+            cant_guardia_diur = len([n for n in todas_novedades if n[2] == "GUARDIA DIURNA"])
+            
+            # Función para lista enumerada
+            def obtener_lista_enumerada(motivo):
+                nombres = [n for n in todas_novedades if n[2] == motivo]
+                if not nombres: return ""
+                lista = []
+                for i, n in enumerate(nombres, 1):
+                    grado_abr = obtener_grado_abreviado(n[0])
+                    nombre_fmt = formato_nombre_apellido(n[0])
+                    lista.append(f"{i}. {grado_abr} {nombre_fmt}")
+                return "\n".join(lista)
+            
+            # Construir minuta - TODO EN MAYÚSCULAS
+            minuta = f"NOVEDADES ESC \"H\" FECHA: {fecha_minuta}\n"
+            minuta += f"FE: {stats['total_general']}\n"
+            minuta += f"P: {stats['presentes_total']}\n"
+            minuta += f"A: {stats['ausentes_total']}\n"
+            minuta += f"\n\n"
+            minuta += f"FORMADOS PRIMERA OBLIGACIÓN: {numero_a_texto(stats['presentes_0620'])}\n"
+            minuta += f"\n\n"
+            minuta += f"INGRESO HORARIO DIFERENCIADO: {numero_a_texto(stats['total_diferenciado'])}\n"
+            
+            # Detalle aulas diferenciado
+            if stats['aulas_diferenciado']:
+                for aula, info in sorted(stats['aulas_diferenciado'].items()):
+                    minuta += f"  - AULA {aula}: {info['total']} ASPIRANTES - HORARIO {info['horario']}\n"
+            minuta += f"\n\n"
+            
+            # APRESTOS
+            minuta += f"APRESTOS EN SUS DOMICILIOS: {numero_a_texto(stats['total_apresto'])}\n"
+            if stats['aulas_apresto']:
+                for aula, cantidad in sorted(stats['aulas_apresto'].items()):
+                    minuta += f"  - AULA {aula}: {cantidad} ASPIRANTES\n"
+            minuta += f"\n\n"
+            
+            # SSD
+            lista_ssd = obtener_lista_enumerada("SSD")
+            if lista_ssd: minuta += f"SSD: {numero_a_texto(cant_ssd)}.-\n{lista_ssd}\n"
+            else: minuta += f"SSD: {numero_a_texto(cant_ssd)}.-\n"
+            minuta += f"\n\n"
+            
+            # AUTORIZADOS
+            lista_aut = obtener_lista_enumerada("AUTORIZADO")
+            if lista_aut: minuta += f"AUTORIZADOS: {numero_a_texto(cant_aut)}.-\n{lista_aut}\n"
+            else: minuta += f"AUTORIZADOS: {numero_a_texto(cant_aut)}.-\n"
+            minuta += f"\n\n"
+            
+            # A CUENTA DE LAO26
+            lista_lao_cuenta = obtener_lista_enumerada("A CUENTA DE LAO")
+            if lista_lao_cuenta: minuta += f"A CUENTA DE LAO26: {numero_a_texto(cant_lao_cuenta)}.-\n{lista_lao_cuenta}\n"
+            else: minuta += f"A CUENTA DE LAO26: {numero_a_texto(cant_lao_cuenta)}.-\n"
+            minuta += f"\n\n"
+            
+            # LAO26
+            lista_lao26 = obtener_lista_enumerada("LAO")
+            if lista_lao26: minuta += f"LAO26: {numero_a_texto(cant_lao26)}.-\n{lista_lao26}\n"
+            else: minuta += f"LAO26: {numero_a_texto(cant_lao26)}.-\n"
+            minuta += f"\n\n"
+            
+            # LES
+            lista_les = obtener_lista_enumerada("LES")
+            if lista_les: minuta += f"LES: {numero_a_texto(cant_les)}.-\n{lista_les}\n"
+            else: minuta += f"LES: {numero_a_texto(cant_les)}.-\n"
+            minuta += f"\n\n"
+            
+            # DESCANSO DEL SERVICIO DE ARMAS NOCTURNO
+            lista_descanso = obtener_lista_enumerada("DESCANSO DE GUARDIA")
+            if lista_descanso: minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(cant_descanso)}.-\n{lista_descanso}\n"
+            else: minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(cant_descanso)}.-\n"
+            minuta += f"\n\n"
+            
+            # SERVICIO DE ARMAS DIURNO
+            lista_diur = obtener_lista_enumerada("GUARDIA DIURNA")
+            if lista_diur: minuta += f"SERVICIO DE ARMAS DIURNO: {numero_a_texto(cant_guardia_diur)}\n{lista_diur}\n"
+            else: minuta += f"SERVICIO DE ARMAS DIURNO: {numero_a_texto(cant_guardia_diur)}\n"
+            minuta += f"\n\n"
+            
+            # RACIONAMIENTO CON LISTA
+            minuta += f"RACIONAMIENTO: {numero_a_texto(len(rac_hoy))}\n"
+            if rac_hoy:
+                minuta += f"\n"
+                for i, r in enumerate(rac_hoy, 1):
+                    grado_abr = obtener_grado_abreviado(r[0])
+                    nombre_fmt = formato_nombre_apellido(r[0])
+                    minuta += f"{i}. {grado_abr} {nombre_fmt}\n"
+            
+            st.text_area("📄 Minuta Generada:", minuta, height=600)
+            st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
 
-# Footer
-st.divider()
-st.markdown("<div style='text-align: center; color: #666;'><small>SISTEMA DE NOVEDADES ESCUADRÓN H \"CABO MARCELO GODOY\" - AÑO 2026</small></div>", unsafe_allow_html=True)
+st.markdown("---")
+st.markdown("<div style='text-align: center; color: #666;'><small>SISTEMA DE NOVEDADES ESCUADRÓN H - AÑO 2026</small></div>", unsafe_allow_html=True)
