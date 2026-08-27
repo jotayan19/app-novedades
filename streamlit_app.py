@@ -106,12 +106,20 @@ def obtener_nombre_completo(nombre_buscado):
             return emp[1].upper()
     return nombre_buscado.upper()
 
+# ==================== FUNCIÓN CORREGIDA PARA OBTENER HORARIO ====================
 def obtener_horario_aula(aula):
     horarios = st.session_state.get('horarios', [])
     aula_upper = aula.strip().upper()
+    
+    # Extraer solo la parte base del aula (ej: "7 TT" de "7 TT (OMO)")
+    aula_base = aula_upper.split('(')[0].strip()
+    
     for hor in horarios:
         if len(hor) >= 2:
-            if hor[0].strip().upper() == aula_upper:
+            hor_aula = hor[0].strip().upper()
+            hor_aula_base = hor_aula.split('(')[0].strip()
+            
+            if hor_aula_base == aula_base:
                 return hor[1]
     return ""
 
@@ -292,7 +300,7 @@ with st.sidebar:
     
     if st.download_button("📥 Descargar empleados.csv", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True):
         st.success("✅ Descargado")
-    if st.download_button("📥 Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True):
+    if st.download_button(" Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True):
         st.success("✅ Descargado")
     if st.download_button("📥 Descargar racionamiento.csv", data=convertir_a_csv(st.session_state['racionamiento']), file_name="racionamiento.csv", mime="text/csv", use_container_width=True):
         st.success("✅ Descargado")
@@ -304,7 +312,7 @@ with st.sidebar:
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "👥 Personal", " Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", " FE por Aula", "📝 Reportes"
+    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
@@ -315,7 +323,7 @@ with tab1:
         st.subheader("📤 Importar Excel")
         archivo_excel = st.file_uploader("Selecciona tu archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
         if archivo_excel is not None:
-            if st.button("💾 Importar Personal", type="primary", use_container_width=True):
+            if st.button(" Importar Personal", type="primary", use_container_width=True):
                 try:
                     df = pd.read_excel(archivo_excel)
                     df.columns = [str(c).strip().upper() for c in df.columns]
@@ -332,10 +340,9 @@ with tab1:
                         st.session_state['empleados'] = empleados
                         st.success(f"✅ Se importaron {len(empleados)} empleados")
                         
-                        # DESCARGA AUTOMÁTICA DEL CSV
                         csv_data = convertir_a_csv(empleados)
                         st.download_button(
-                            "️ Descargar CSV de respaldo",
+                            "📥 Descargar CSV de respaldo",
                             data=csv_data,
                             file_name=f"empleados_{datetime.now().strftime('%d%m%Y')}.csv",
                             mime="text/csv",
@@ -344,7 +351,7 @@ with tab1:
                         st.rerun()
                 except Exception as e: st.error(f"Error: {str(e)}")
     with col2:
-        st.subheader(" Personal Registrado")
+        st.subheader("📋 Personal Registrado")
         empleados = st.session_state.get('empleados', [])
         if empleados:
             df_empleados = pd.DataFrame(empleados, columns=['Grado', 'Apellido y Nombre', 'DNI', 'CE', 'Aula'])
@@ -410,9 +417,9 @@ with tab4:
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
             motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
-            observaciones = st.text_area("📝 Observaciones:", height=100, key="nov_obs")
+            observaciones = st.text_area(" Observaciones:", height=100, key="nov_obs")
         
-        if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
+        if st.button(" Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
                 nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
@@ -454,7 +461,16 @@ with tab6:
     st.header("📊 Fuerza Efectiva por Aula")
     stats = calcular_estadisticas()
     if stats and stats['aulas_dict']:
-        datos = [{"Aula": a, "FE": i["total"], "Horario": i["horario"] or "Sin asignar", "P": i["total"]-i["ausentes"], "A": i["ausentes"]} for a, i in sorted(stats["aulas_dict"].items())]
+        datos = []
+        for a, i in sorted(stats["aulas_dict"].items()):
+            aula_display = a
+            datos.append({
+                "Aula": aula_display, 
+                "FE": i["total"], 
+                "Horario": i["horario"] if i["horario"] else "Sin asignar", 
+                "P": i["total"]-i["ausentes"], 
+                "A": i["ausentes"]
+            })
         st.dataframe(pd.DataFrame(datos), use_container_width=True)
 
 # ==================== TAB 7: REPORTES - MINUTA ====================
@@ -496,7 +512,6 @@ with tab7:
             minuta += f"FORMADOS PRIMERA OBLIGACIÓN: {numero_a_texto(stats['presentes_0620'])}\n"
             minuta += f"\n\n"
             
-            # INGRESO HORARIO DIFERENCIADO
             minuta += f"INGRESO HORARIO DIFERENCIADO: {numero_a_texto(stats['total_diferenciado'])}\n"
             if stats['aulas_diferenciado']:
                 for i, (aula, info) in enumerate(sorted(stats['aulas_diferenciado'].items()), 1):
@@ -504,56 +519,47 @@ with tab7:
                     minuta += f"{i}. AULA {aula} - {info['total']} {grado_aula} - INGRESO {info['horario']}\n"
             minuta += f"\n\n"
             
-            # APRESTOS
             minuta += f"APRESTOS EN SUS DOMICILIOS: {numero_a_texto(stats['total_apresto'])}\n"
             if stats['aulas_apresto']:
                 for aula, cantidad in sorted(stats['aulas_apresto'].items()):
                     minuta += f"  - AULA {aula}: {cantidad} ASPIRANTES\n"
             minuta += f"\n\n"
             
-            # SSD
             lista_ssd = obtener_lista_enumerada("SSD")
             if lista_ssd: minuta += f"SSD: {numero_a_texto(cant_ssd)}.-\n{lista_ssd}\n"
             else: minuta += f"SSD: {numero_a_texto(cant_ssd)}.-\n"
             minuta += f"\n\n"
             
-            # AUTORIZADOS
             lista_aut = obtener_lista_enumerada("AUTORIZADO")
             if lista_aut: minuta += f"AUTORIZADOS: {numero_a_texto(cant_aut)}.-\n{lista_aut}\n"
             else: minuta += f"AUTORIZADOS: {numero_a_texto(cant_aut)}.-\n"
             minuta += f"\n\n"
             
-            # A CUENTA DE LAO26
             lista_lao_cuenta = obtener_lista_enumerada("A CUENTA DE LAO")
             if lista_lao_cuenta: minuta += f"A CUENTA DE LAO26: {numero_a_texto(cant_lao_cuenta)}.-\n{lista_lao_cuenta}\n"
             else: minuta += f"A CUENTA DE LAO26: {numero_a_texto(cant_lao_cuenta)}.-\n"
             minuta += f"\n\n"
             
-            # LAO26
             lista_lao26 = obtener_lista_enumerada("LAO")
             if lista_lao26: minuta += f"LAO26: {numero_a_texto(cant_lao26)}.-\n{lista_lao26}\n"
             else: minuta += f"LAO26: {numero_a_texto(cant_lao26)}.-\n"
             minuta += f"\n\n"
             
-            # LES
             lista_les = obtener_lista_enumerada("LES")
             if lista_les: minuta += f"LES: {numero_a_texto(cant_les)}.-\n{lista_les}\n"
             else: minuta += f"LES: {numero_a_texto(cant_les)}.-\n"
             minuta += f"\n\n"
             
-            # DESCANSO DEL SERVICIO DE ARMAS NOCTURNO
             lista_descanso = obtener_lista_enumerada("DESCANSO DE GUARDIA")
             if lista_descanso: minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(cant_descanso)}.-\n{lista_descanso}\n"
             else: minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(cant_descanso)}.-\n"
             minuta += f"\n\n"
             
-            # SERVICIO DE ARMAS DIURNO
             lista_diur = obtener_lista_enumerada("GUARDIA DIURNA")
             if lista_diur: minuta += f"SERVICIO DE ARMAS DIURNO: {numero_a_texto(cant_guardia_diur)}\n{lista_diur}\n"
             else: minuta += f"SERVICIO DE ARMAS DIURNO: {numero_a_texto(cant_guardia_diur)}\n"
             minuta += f"\n\n"
             
-            # RACIONAMIENTO CON LISTA
             minuta += f"RACIONAMIENTO: {numero_a_texto(len(rac_hoy))}\n"
             if rac_hoy:
                 minuta += f"\n"
@@ -564,7 +570,7 @@ with tab7:
             
             minuta = minuta.upper()
             
-            st.text_area(" Minuta Generada:", minuta, height=600)
+            st.text_area("📄 Minuta Generada:", minuta, height=600)
             st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
 
 st.markdown("---")
