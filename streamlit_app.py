@@ -3,11 +3,13 @@ import pandas as pd
 from datetime import datetime
 import csv
 import io
+import requests
+import base64
 
 # ==================== CONFIGURACIÓN ====================
 st.set_page_config(
     page_title="SISTEMA DE NOVEDADES",
-    page_icon="👮‍♂️",
+    page_icon="👮♂️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -49,6 +51,10 @@ st.markdown("""
 USUARIO_CORRECTO = "DRAGJOTAYANLEONEL"
 CONTRASENA_CORRECTA = "Drag2026"
 
+GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
+GITHUB_REPO = "jotayan19/app-novedades"
+GITHUB_BRANCH = "main"
+
 NOMBRES_ARCHIVOS = {
     'empleados': 'empleados.csv', 'horarios': 'horarios.csv',
     'novedades': 'novedades.csv', 'racionamiento': 'racionamiento.csv',
@@ -66,7 +72,59 @@ MOTIVOS = {
     "Presente pero fuera del escuadron": ["GUARDIA DIURNA", "GUARDIA NOCTURNA", "FORMACION", "PRACTICA DE DESFILE"]
 }
 
-# ==================== FUNCIONES ====================
+# ==================== FUNCIONES DE GITHUB ====================
+def guardar_csv_en_github(nombre_archivo, datos):
+    """Guarda el CSV en GitHub automáticamente"""
+    if not GITHUB_TOKEN:
+        return False
+    
+    try:
+        csv_content = convertir_a_csv(datos)
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{nombre_archivo}?ref={GITHUB_BRANCH}"
+        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        
+        response = requests.get(url, headers=headers)
+        sha = None
+        if response.status_code == 200:
+            sha = response.json().get("sha")
+        
+        content_base64 = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
+        
+        data = {
+            "message": f"Actualización automática de {nombre_archivo}",
+            "content": content_base64,
+            "branch": GITHUB_BRANCH
+        }
+        if sha:
+            data["sha"] = sha
+        
+        response = requests.put(url, json=data, headers=headers)
+        return response.status_code in [200, 201]
+    except Exception as e:
+        print(f"Error al guardar en GitHub: {e}")
+        return False
+
+def cargar_csv_desde_github(nombre_archivo):
+    """Carga el CSV desde GitHub"""
+    if not GITHUB_TOKEN:
+        return cargar_csv_inicial(nombre_archivo)
+    
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{nombre_archivo}?ref={GITHUB_BRANCH}"
+        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            content = response.json().get("content", "")
+            decoded = base64.b64decode(content).decode('utf-8')
+            reader = csv.reader(decoded.splitlines())
+            return [row for row in reader if row]
+    except:
+        pass
+    
+    return cargar_csv_inicial(nombre_archivo)
+
+# ==================== FUNCIONES AUXILIARES ====================
 def cargar_csv_inicial(nombre_referencia):
     try:
         with open(nombre_referencia, 'r', encoding='utf-8') as f:
@@ -104,7 +162,7 @@ def obtener_nombre_completo(nombre_buscado):
     empleados = st.session_state.get('empleados', [])
     for emp in empleados:
         if len(emp) >= 2 and emp[1].upper().strip() == nombre_buscado.upper().strip():
-            return emp[1].upper()  # Retorna el nombre completo como está en el Excel
+            return emp[1].upper()
     return nombre_buscado.upper()
 
 def obtener_horario_aula(aula):
@@ -112,8 +170,7 @@ def obtener_horario_aula(aula):
     aula_upper = aula.strip().upper()
     for hor in horarios:
         if len(hor) >= 2:
-            horario_aula = hor[0].strip().upper()
-            if horario_aula == aula_upper:
+            if hor[0].strip().upper() == aula_upper:
                 return hor[1]
     return ""
 
@@ -134,7 +191,6 @@ def calcular_estadisticas():
     novedades = st.session_state.get('novedades', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
     
-    # Normalizar novedades
     novedades_norm = []
     for n in novedades:
         if len(n) >= 5:
@@ -152,10 +208,8 @@ def calcular_estadisticas():
     total_3 = sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año")
     total_cao = sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo")
     
-    # Ausentes por novedades
     ausentes_novedades = len(novedades_hoy)
     
-    # Ausentes por apresto
     ausentes_apresto = 0
     for e in empleados:
         if len(e) >= 5:
@@ -167,7 +221,6 @@ def calcular_estadisticas():
     ausentes_total = ausentes_novedades + ausentes_apresto
     presentes_total = total_general - ausentes_total
     
-    # Por curso
     ausentes_3 = sum(1 for n in novedades_hoy if determinar_curso(n[0]) == "Tercer Año")
     ausentes_3 += sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año" and len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
     
@@ -177,7 +230,6 @@ def calcular_estadisticas():
     presentes_3 = total_3 - ausentes_3
     presentes_cao = total_cao - ausentes_cao
     
-    # Aulas dict
     aulas_dict = {}
     for emp in empleados:
         if len(emp) >= 5:
@@ -195,7 +247,6 @@ def calcular_estadisticas():
             if tiene_novedad or horario == "apresto en domicilio":
                 aulas_dict[aula]["ausentes"] += 1
     
-    # Presentes 06:20
     presentes_0620 = 0
     for e in empleados:
         if len(e) >= 5:
@@ -211,12 +262,12 @@ def calcular_estadisticas():
     
     for aula, info in aulas_dict.items():
         horario = info["horario"]
-        # Si tiene horario y NO es 06:20 y NO es apresto
         if horario and horario != "06:20" and horario != "apresto en domicilio":
             presentes_aula = info["total"] - info["ausentes"]
             aulas_diferenciado[aula] = {
                 "total": presentes_aula,
-                "horario": horario
+                "horario": horario,
+                "curso": info["curso"]
             }
             total_diferenciado += presentes_aula
     
@@ -268,11 +319,16 @@ if not st.session_state['logueado']:
     pantalla_login()
     st.stop()
 
-if 'empleados' not in st.session_state: st.session_state['empleados'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['empleados'])
-if 'horarios' not in st.session_state: st.session_state['horarios'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['horarios'])
-if 'novedades' not in st.session_state: st.session_state['novedades'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['novedades'])
-if 'racionamiento' not in st.session_state: st.session_state['racionamiento'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['racionamiento'])
-if 'plan_llamada' not in st.session_state: st.session_state['plan_llamada'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['plan_llamada'])
+if 'empleados' not in st.session_state: 
+    st.session_state['empleados'] = cargar_csv_desde_github(NOMBRES_ARCHIVOS['empleados'])
+if 'horarios' not in st.session_state: 
+    st.session_state['horarios'] = cargar_csv_desde_github(NOMBRES_ARCHIVOS['horarios'])
+if 'novedades' not in st.session_state: 
+    st.session_state['novedades'] = cargar_csv_desde_github(NOMBRES_ARCHIVOS['novedades'])
+if 'racionamiento' not in st.session_state: 
+    st.session_state['racionamiento'] = cargar_csv_desde_github(NOMBRES_ARCHIVOS['racionamiento'])
+if 'plan_llamada' not in st.session_state: 
+    st.session_state['plan_llamada'] = cargar_csv_desde_github(NOMBRES_ARCHIVOS['plan_llamada'])
 if 'nov_counter' not in st.session_state: st.session_state['nov_counter'] = 0
 if 'rac_counter' not in st.session_state: st.session_state['rac_counter'] = 0
 
@@ -286,7 +342,7 @@ with st.sidebar:
     st.markdown('<h2 style="color: #4CAF50; text-align: center;">PANEL DE CONTROL</h2>', unsafe_allow_html=True)
     st.markdown("---")
     c1, c2 = st.columns(2)
-    with c1: st.metric("📅 Fecha", datetime.now().strftime('%d/%m/%Y'))
+    with c1: st.metric(" Fecha", datetime.now().strftime('%d/%m/%Y'))
     with c2: st.metric("🕐 Hora", datetime.now().strftime('%H:%M:%S'))
     st.markdown("---")
     
@@ -297,16 +353,28 @@ with st.sidebar:
         st.metric("📋 Ausentes", stats["ausentes_total"])
     
     st.markdown("---")
-    if st.download_button("📥 Descargar empleados.csv", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True): pass
-    if st.download_button("📥 Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True): pass
+    st.markdown("#### 💾 Guardar Datos")
     
+    if GITHUB_TOKEN:
+        if st.button("💾 Guardar todo en GitHub", type="primary", use_container_width=True):
+            guardar_csv_en_github('empleados.csv', st.session_state['empleados'])
+            guardar_csv_en_github('horarios.csv', st.session_state['horarios'])
+            guardar_csv_en_github('novedades.csv', st.session_state['novedades'])
+            guardar_csv_en_github('racionamiento.csv', st.session_state['racionamiento'])
+            st.success("✅ Datos guardados en GitHub")
+    else:
+        st.warning("⚠️ Configurar GITHUB_TOKEN en Secrets")
+        if st.download_button("📥 Descargar empleados.csv", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True): pass
+        if st.download_button("📥 Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True): pass
+    
+    st.markdown("---")
     if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
         st.session_state['logueado'] = False
         st.rerun()
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "👥 Personal", "🏫 Aulas/Horarios", " Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
+    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", " Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
@@ -331,6 +399,9 @@ with tab1:
                             empleados.append([grado, nombre, dni, ce, aula])
                     if empleados:
                         st.session_state['empleados'] = empleados
+                        # Guardar automáticamente en GitHub
+                        if GITHUB_TOKEN:
+                            guardar_csv_en_github('empleados.csv', empleados)
                         st.success(f"✅ Se importaron {len(empleados)} empleados")
                         st.rerun()
                 except Exception as e: st.error(f"Error: {str(e)}")
@@ -365,10 +436,11 @@ with tab2:
         
         if st.form_submit_button("💾 Guardar Horarios", type="primary", use_container_width=True):
             st.session_state['horarios'] = nuevos_horarios
+            if GITHUB_TOKEN:
+                guardar_csv_en_github('horarios.csv', nuevos_horarios)
             st.success("✅ Horarios guardados")
             st.rerun()
     
-    # Mostrar horarios guardados
     if horarios_actuales:
         st.write("**Horarios guardados:**")
         for h in horarios_actuales:
@@ -396,19 +468,21 @@ with tab4:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
         col1, col2 = st.columns(2)
         with col1:
-            empleado_sel = st.selectbox("🔍 Buscar Empleado:", [""] + nombres, key=f"nov_emp_{st.session_state['nov_counter']}")
+            empleado_sel = st.selectbox(" Buscar Empleado:", [""] + nombres, key=f"nov_emp_{st.session_state['nov_counter']}")
             categoria = st.selectbox("📂 Categoría:", [""] + list(MOTIVOS.keys()), key="nov_cat")
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
             motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
-            observaciones = st.text_area(" Observaciones:", height=100, key="nov_obs")
+            observaciones = st.text_area("📝 Observaciones:", height=100, key="nov_obs")
         
-        if st.button(" Guardar Novedad", type="primary", use_container_width=True):
+        if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
                 nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
                 st.session_state['novedades'].append(nueva_novedad)
                 st.session_state['nov_counter'] += 1
+                if GITHUB_TOKEN:
+                    guardar_csv_en_github('novedades.csv', st.session_state['novedades'])
                 st.success("✅ Novedad guardada")
                 st.rerun()
 
@@ -422,7 +496,7 @@ with tab5:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
         col1, col2 = st.columns(2)
         with col1:
-            empleado_sel = st.selectbox(" Buscar Empleado:", [""] + nombres, key=f"rac_emp_{st.session_state['rac_counter']}")
+            empleado_sel = st.selectbox("🔍 Buscar Empleado:", [""] + nombres, key=f"rac_emp_{st.session_state['rac_counter']}")
         with col2:
             observaciones = st.text_input("📝 Observaciones:", key="rac_obs")
             st.markdown("<br>", unsafe_allow_html=True)
@@ -431,6 +505,8 @@ with tab5:
                     nombre = empleado_sel.split(" - ", 1)[1]
                     st.session_state['racionamiento'].append([nombre, "Almuerzo", observaciones, hoy])
                     st.session_state['rac_counter'] += 1
+                    if GITHUB_TOKEN:
+                        guardar_csv_en_github('racionamiento.csv', st.session_state['racionamiento'])
                     st.success("✅ Almuerzo registrado")
                     st.rerun()
         
@@ -442,7 +518,7 @@ with tab5:
 
 # ==================== TAB 6: FE POR AULA ====================
 with tab6:
-    st.header("📊 Fuerza Efectiva por Aula")
+    st.header(" Fuerza Efectiva por Aula")
     stats = calcular_estadisticas()
     if stats and stats['aulas_dict']:
         datos = [{"Aula": a, "FE": i["total"], "Horario": i["horario"] or "Sin asignar", "P": i["total"]-i["ausentes"], "A": i["ausentes"]} for a, i in sorted(stats["aulas_dict"].items())]
@@ -461,7 +537,6 @@ with tab7:
             racionamiento = st.session_state.get('racionamiento', [])
             rac_hoy = [r for r in racionamiento if len(r) >= 4 and r[3] == fecha_minuta]
             
-            # Conteos - TODO EN MAYÚSCULAS
             cant_ssd = len([n for n in todas_novedades if n[2] == "SSD"])
             cant_aut = len([n for n in todas_novedades if n[2] == "AUTORIZADO"])
             cant_lao_cuenta = len([n for n in todas_novedades if n[2] == "A CUENTA DE LAO"])
@@ -470,7 +545,6 @@ with tab7:
             cant_descanso = len([n for n in todas_novedades if n[2] == "DESCANSO DE GUARDIA"])
             cant_guardia_diur = len([n for n in todas_novedades if n[2] == "GUARDIA DIURNA"])
             
-            # Función para lista enumerada - NOMBRE COMO VIENE EN PLANILLA
             def obtener_lista_enumerada(motivo):
                 nombres = [n for n in todas_novedades if n[2] == motivo]
                 if not nombres: return ""
@@ -481,7 +555,6 @@ with tab7:
                     lista.append(f"{i}. {grado_abr} {nombre_completo}")
                 return "\n".join(lista)
             
-            # Construir minuta - TODO EN MAYÚSCULAS
             minuta = f"NOVEDADES ESC \"H\" FECHA: {fecha_minuta}\n"
             minuta += f"FE: {stats['total_general']}\n"
             minuta += f"P: {stats['presentes_total']}\n"
@@ -490,12 +563,12 @@ with tab7:
             minuta += f"FORMADOS PRIMERA OBLIGACIÓN: {numero_a_texto(stats['presentes_0620'])}\n"
             minuta += f"\n\n"
             
-            # INGRESO HORARIO DIFERENCIADO
+            # INGRESO HORARIO DIFERENCIADO - CON FORMATO ENUMERADO
             minuta += f"INGRESO HORARIO DIFERENCIADO: {numero_a_texto(stats['total_diferenciado'])}\n"
-            # Detalle por aula
             if stats['aulas_diferenciado']:
-                for aula, info in sorted(stats['aulas_diferenciado'].items()):
-                    minuta += f"  - AULA {aula}: {info['total']} ASPIRANTES - HORARIO {info['horario']}\n"
+                for i, (aula, info) in enumerate(sorted(stats['aulas_diferenciado'].items()), 1):
+                    grado_aula = "ASP III" if info['curso'] == 'Tercer Año' else "ASP I"
+                    minuta += f"{i}. AULA {aula} - {info['total']} {grado_aula} - INGRESO {info['horario']}\n"
             minuta += f"\n\n"
             
             # APRESTOS
@@ -556,10 +629,9 @@ with tab7:
                     nombre_completo = obtener_nombre_completo(r[0])
                     minuta += f"{i}. {grado_abr} {nombre_completo}\n"
             
-            # TODO A MAYÚSCULAS
             minuta = minuta.upper()
             
-            st.text_area("📄 Minuta Generada:", minuta, height=600)
+            st.text_area(" Minuta Generada:", minuta, height=600)
             st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
 
 st.markdown("---")
