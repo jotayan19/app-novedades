@@ -97,26 +97,24 @@ def obtener_grado_abreviado(nombre):
         if len(emp) >= 2 and emp[1].upper().strip() == nombre.upper().strip():
             curso = determinar_curso(emp[0])
             return "ASP III" if curso == "Tercer Año" else "ASP I"
-    return "ASP I" if "DRAG" in nombre.upper() else "ASP I"
+    return "ASP I"
 
-def obtener_grado_por_nombre(nombre):
+def obtener_nombre_completo(nombre_buscado):
+    """Retorna el nombre tal como está en la planilla"""
     empleados = st.session_state.get('empleados', [])
     for emp in empleados:
-        if len(emp) >= 2 and emp[1].upper().strip() == nombre.upper().strip():
-            return emp[0]
-    return ""
-
-def determinar_curso_por_nombre(nombre):
-    grado = obtener_grado_por_nombre(nombre)
-    if grado: return determinar_curso(grado)
-    return "Tercer Año" if "DRAG" in nombre.upper() else "Auxiliar Operativo"
+        if len(emp) >= 2 and emp[1].upper().strip() == nombre_buscado.upper().strip():
+            return emp[1].upper()  # Retorna el nombre completo como está en el Excel
+    return nombre_buscado.upper()
 
 def obtener_horario_aula(aula):
     horarios = st.session_state.get('horarios', [])
     aula_upper = aula.strip().upper()
     for hor in horarios:
-        if len(hor) >= 2 and hor[0].strip().upper() == aula_upper:
-            return hor[1]
+        if len(hor) >= 2:
+            horario_aula = hor[0].strip().upper()
+            if horario_aula == aula_upper:
+                return hor[1]
     return ""
 
 def numero_a_texto(numero):
@@ -131,20 +129,12 @@ def numero_a_texto(numero):
     }
     return numeros.get(numero, f"{numero:02d}")
 
-def formato_nombre_apellido(nombre_completo):
-    nombre_completo = nombre_completo.strip().upper()
-    partes = nombre_completo.split()
-    if len(partes) >= 2:
-        apellido = partes[-1]
-        nombres = " ".join(partes[:-1])
-        return f"{apellido}, {nombres}"
-    return nombre_completo
-
 def calcular_estadisticas():
     empleados = st.session_state.get('empleados', [])
     novedades = st.session_state.get('novedades', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
     
+    # Normalizar novedades
     novedades_norm = []
     for n in novedades:
         if len(n) >= 5:
@@ -162,23 +152,27 @@ def calcular_estadisticas():
     total_3 = sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año")
     total_cao = sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo")
     
-    # Contar ausentes por novedades
+    # Ausentes por novedades
     ausentes_novedades = len(novedades_hoy)
     
-    # Contar ausentes por apresto
-    ausentes_apresto = sum(1 for e in empleados if len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
+    # Ausentes por apresto
+    ausentes_apresto = 0
+    for e in empleados:
+        if len(e) >= 5:
+            aula = e[4].strip().upper()
+            horario = obtener_horario_aula(aula)
+            if horario == "apresto en domicilio":
+                ausentes_apresto += 1
     
     ausentes_total = ausentes_novedades + ausentes_apresto
     presentes_total = total_general - ausentes_total
     
-    # Calcular por curso
-    ausentes_3_novedades = sum(1 for n in novedades_hoy if determinar_curso_por_nombre(n[0]) == "Tercer Año")
-    ausentes_3_apresto = sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año" and len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
-    ausentes_3 = ausentes_3_novedades + ausentes_3_apresto
+    # Por curso
+    ausentes_3 = sum(1 for n in novedades_hoy if determinar_curso(n[0]) == "Tercer Año")
+    ausentes_3 += sum(1 for e in empleados if determinar_curso(e[0]) == "Tercer Año" and len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
     
-    ausentes_cao_novedades = sum(1 for n in novedades_hoy if determinar_curso_por_nombre(n[0]) == "Auxiliar Operativo")
-    ausentes_cao_apresto = sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo" and len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
-    ausentes_cao = ausentes_cao_novedades + ausentes_cao_apresto
+    ausentes_cao = sum(1 for n in novedades_hoy if determinar_curso(n[0]) == "Auxiliar Operativo")
+    ausentes_cao += sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo" and len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
     
     presentes_3 = total_3 - ausentes_3
     presentes_cao = total_cao - ausentes_cao
@@ -201,16 +195,29 @@ def calcular_estadisticas():
             if tiene_novedad or horario == "apresto en domicilio":
                 aulas_dict[aula]["ausentes"] += 1
     
-    # Calcular formados 06:20
-    presentes_0620 = sum(1 for e in empleados if len(e) >= 5 and obtener_horario_aula(e[4]) == "06:20" and not any(n[0].upper().strip() == e[1].upper().strip() for n in novedades_hoy))
+    # Presentes 06:20
+    presentes_0620 = 0
+    for e in empleados:
+        if len(e) >= 5:
+            aula = e[4].strip().upper()
+            horario = obtener_horario_aula(aula)
+            if horario == "06:20":
+                if not any(n[0].upper().strip() == e[1].upper().strip() for n in novedades_hoy):
+                    presentes_0620 += 1
     
-    # HORARIO DIFERENCIADO: TODAS LAS AULAS QUE NO SON 06:20 NI APRESTO
+    # INGRESO HORARIO DIFERENCIADO: TODOS LOS QUE NO SON 06:20 NI APRESTO
     aulas_diferenciado = {}
     total_diferenciado = 0
+    
     for aula, info in aulas_dict.items():
-        if info["horario"] and info["horario"] != "06:20" and info["horario"] != "apresto en domicilio":
+        horario = info["horario"]
+        # Si tiene horario y NO es 06:20 y NO es apresto
+        if horario and horario != "06:20" and horario != "apresto en domicilio":
             presentes_aula = info["total"] - info["ausentes"]
-            aulas_diferenciado[aula] = {"total": presentes_aula, "horario": info["horario"]}
+            aulas_diferenciado[aula] = {
+                "total": presentes_aula,
+                "horario": horario
+            }
             total_diferenciado += presentes_aula
     
     # APRESTOS
@@ -239,7 +246,7 @@ def pantalla_login():
     with col_center[1]:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<h1 class="login-title">SISTEMA DE NOVEDADES</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
+        st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRON H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
         
         with st.form("login_form", clear_on_submit=True):
             usuario = st.text_input("Usuario", placeholder="Ingrese su usuario", label_visibility="collapsed")
@@ -279,7 +286,7 @@ with st.sidebar:
     st.markdown('<h2 style="color: #4CAF50; text-align: center;">PANEL DE CONTROL</h2>', unsafe_allow_html=True)
     st.markdown("---")
     c1, c2 = st.columns(2)
-    with c1: st.metric(" Fecha", datetime.now().strftime('%d/%m/%Y'))
+    with c1: st.metric("📅 Fecha", datetime.now().strftime('%d/%m/%Y'))
     with c2: st.metric("🕐 Hora", datetime.now().strftime('%H:%M:%S'))
     st.markdown("---")
     
@@ -337,24 +344,36 @@ with tab1:
 # ==================== TAB 2: HORARIOS ====================
 with tab2:
     st.header("Configuración de Horarios")
+    st.info(f"AULAS: {', '.join(AULAS)}")
+    
     horarios_actuales = st.session_state.get('horarios', [])
-    horarios_dict = {h[0]: h[1] for h in horarios_actuales if len(h) >= 2}
+    horarios_dict = {h[0].upper(): h[1] for h in horarios_actuales if len(h) >= 2}
     
     with st.form("form_horarios"):
         nuevos_horarios = []
         cols = st.columns(2)
         for i, aula in enumerate(AULAS):
             with cols[i % 2]:
-                horario_actual = horarios_dict.get(aula, "")
+                horario_actual = horarios_dict.get(aula.upper(), "")
                 index_val = 0
-                if horario_actual in OPCIONES_HORARIO: index_val = OPCIONES_HORARIO.index(horario_actual)
-                horario = st.selectbox(f"Aula {aula}", OPCIONES_HORARIO, index=index_val, key=f"horario_{aula}")
-                if horario: nuevos_horarios.append([aula, horario])
+                if horario_actual in OPCIONES_HORARIO: 
+                    index_val = OPCIONES_HORARIO.index(horario_actual)
+                
+                horario = st.selectbox(f"AULA {aula}", OPCIONES_HORARIO, index=index_val, key=f"horario_{aula}")
+                if horario: 
+                    nuevos_horarios.append([aula.upper(), horario])
         
-        if st.form_submit_button(" Guardar Horarios", type="primary", use_container_width=True):
+        if st.form_submit_button("💾 Guardar Horarios", type="primary", use_container_width=True):
             st.session_state['horarios'] = nuevos_horarios
             st.success("✅ Horarios guardados")
             st.rerun()
+    
+    # Mostrar horarios guardados
+    if horarios_actuales:
+        st.write("**Horarios guardados:**")
+        for h in horarios_actuales:
+            if len(h) >= 2:
+                st.write(f"- {h[0]}: {h[1]}")
 
 # ==================== TAB 3: PLAN LLAMADA ====================
 with tab3:
@@ -382,9 +401,9 @@ with tab4:
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
             motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
-            observaciones = st.text_area("📝 Observaciones:", height=100, key="nov_obs")
+            observaciones = st.text_area(" Observaciones:", height=100, key="nov_obs")
         
-        if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
+        if st.button(" Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
                 nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
@@ -407,7 +426,7 @@ with tab5:
         with col2:
             observaciones = st.text_input("📝 Observaciones:", key="rac_obs")
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button(" Guardar Almuerzo", type="primary", use_container_width=True):
+            if st.button("💾 Guardar Almuerzo", type="primary", use_container_width=True):
                 if empleado_sel:
                     nombre = empleado_sel.split(" - ", 1)[1]
                     st.session_state['racionamiento'].append([nombre, "Almuerzo", observaciones, hoy])
@@ -442,7 +461,7 @@ with tab7:
             racionamiento = st.session_state.get('racionamiento', [])
             rac_hoy = [r for r in racionamiento if len(r) >= 4 and r[3] == fecha_minuta]
             
-            # Conteos
+            # Conteos - TODO EN MAYÚSCULAS
             cant_ssd = len([n for n in todas_novedades if n[2] == "SSD"])
             cant_aut = len([n for n in todas_novedades if n[2] == "AUTORIZADO"])
             cant_lao_cuenta = len([n for n in todas_novedades if n[2] == "A CUENTA DE LAO"])
@@ -451,15 +470,15 @@ with tab7:
             cant_descanso = len([n for n in todas_novedades if n[2] == "DESCANSO DE GUARDIA"])
             cant_guardia_diur = len([n for n in todas_novedades if n[2] == "GUARDIA DIURNA"])
             
-            # Función para lista enumerada
+            # Función para lista enumerada - NOMBRE COMO VIENE EN PLANILLA
             def obtener_lista_enumerada(motivo):
                 nombres = [n for n in todas_novedades if n[2] == motivo]
                 if not nombres: return ""
                 lista = []
                 for i, n in enumerate(nombres, 1):
                     grado_abr = obtener_grado_abreviado(n[0])
-                    nombre_fmt = formato_nombre_apellido(n[0])
-                    lista.append(f"{i}. {grado_abr} {nombre_fmt}")
+                    nombre_completo = obtener_nombre_completo(n[0])
+                    lista.append(f"{i}. {grado_abr} {nombre_completo}")
                 return "\n".join(lista)
             
             # Construir minuta - TODO EN MAYÚSCULAS
@@ -470,9 +489,10 @@ with tab7:
             minuta += f"\n\n"
             minuta += f"FORMADOS PRIMERA OBLIGACIÓN: {numero_a_texto(stats['presentes_0620'])}\n"
             minuta += f"\n\n"
-            minuta += f"INGRESO HORARIO DIFERENCIADO: {numero_a_texto(stats['total_diferenciado'])}\n"
             
-            # Detalle aulas diferenciado
+            # INGRESO HORARIO DIFERENCIADO
+            minuta += f"INGRESO HORARIO DIFERENCIADO: {numero_a_texto(stats['total_diferenciado'])}\n"
+            # Detalle por aula
             if stats['aulas_diferenciado']:
                 for aula, info in sorted(stats['aulas_diferenciado'].items()):
                     minuta += f"  - AULA {aula}: {info['total']} ASPIRANTES - HORARIO {info['horario']}\n"
@@ -533,11 +553,14 @@ with tab7:
                 minuta += f"\n"
                 for i, r in enumerate(rac_hoy, 1):
                     grado_abr = obtener_grado_abreviado(r[0])
-                    nombre_fmt = formato_nombre_apellido(r[0])
-                    minuta += f"{i}. {grado_abr} {nombre_fmt}\n"
+                    nombre_completo = obtener_nombre_completo(r[0])
+                    minuta += f"{i}. {grado_abr} {nombre_completo}\n"
+            
+            # TODO A MAYÚSCULAS
+            minuta = minuta.upper()
             
             st.text_area("📄 Minuta Generada:", minuta, height=600)
             st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
 
 st.markdown("---")
-st.markdown("<div style='text-align: center; color: #666;'><small>SISTEMA DE NOVEDADES ESCUADRÓN H - AÑO 2026</small></div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; color: #666;'><small>SISTEMA DE NOVEDADES ESCUADRON H - AÑO 2026</small></div>", unsafe_allow_html=True)
