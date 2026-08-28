@@ -9,28 +9,86 @@ import base64
 # ==================== CONFIGURACIÓN ====================
 st.set_page_config(
     page_title="SISTEMA DE NOVEDADES",
-    page_icon="👮‍♂️",
+    page_icon="️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Logo de Gendarmería - Espadas Cruzadas en SVG
+LOGO_ESPADAS = """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100" height="100">
+    <!-- Hojas de laurel verdes (izquierda) -->
+    <path d="M 100 170 Q 80 150 70 130 Q 60 110 75 100 Q 85 110 90 130 Q 95 150 100 170" fill="#2d5016" stroke="#1a3d0a" stroke-width="1"/>
+    <path d="M 100 170 Q 85 155 78 140 Q 70 125 80 115 Q 88 125 92 140 Q 96 155 100 170" fill="#3d6b1f" stroke="#1a3d0a" stroke-width="1"/>
+    <path d="M 100 170 Q 90 160 85 148 Q 80 138 88 130 Q 94 138 97 150 Q 99 160 100 170" fill="#4a7c23" stroke="#1a3d0a" stroke-width="1"/>
+    
+    <!-- Hojas de laurel verdes (derecha) -->
+    <path d="M 100 170 Q 120 150 130 130 Q 140 110 125 100 Q 115 110 110 130 Q 105 150 100 170" fill="#2d5016" stroke="#1a3d0a" stroke-width="1"/>
+    <path d="M 100 170 Q 115 155 122 140 Q 130 125 120 115 Q 112 125 108 140 Q 104 155 100 170" fill="#3d6b1f" stroke="#1a3d0a" stroke-width="1"/>
+    <path d="M 100 170 Q 110 160 115 148 Q 120 138 112 130 Q 106 138 103 150 Q 101 160 100 170" fill="#4a7c23" stroke="#1a3d0a" stroke-width="1"/>
+    
+    <!-- Espada izquierda (diagonal) -->
+    <line x1="40" y1="40" x2="160" y2="160" stroke="#c0c0c0" stroke-width="6" stroke-linecap="round"/>
+    <line x1="40" y1="40" x2="160" y2="160" stroke="#e8e8e8" stroke-width="3" stroke-linecap="round"/>
+    <!-- Mango espada izquierda -->
+    <line x1="30" y1="30" x2="50" y2="50" stroke="#8B4513" stroke-width="8" stroke-linecap="round"/>
+    <!-- Guarda espada izquierda -->
+    <line x1="35" y1="55" x2="55" y2="35" stroke="#DAA520" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- Espada derecha (diagonal inversa) -->
+    <line x1="160" y1="40" x2="40" y2="160" stroke="#c0c0c0" stroke-width="6" stroke-linecap="round"/>
+    <line x1="160" y1="40" x2="40" y2="160" stroke="#e8e8e8" stroke-width="3" stroke-linecap="round"/>
+    <!-- Mango espada derecha -->
+    <line x1="170" y1="30" x2="150" y2="50" stroke="#8B4513" stroke-width="8" stroke-linecap="round"/>
+    <!-- Guarda espada derecha -->
+    <line x1="165" y1="55" x2="145" y2="35" stroke="#DAA520" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- Lazo azul en el centro -->
+    <path d="M 100 85 Q 85 75 85 90 Q 85 100 100 95 Q 115 100 115 90 Q 115 75 100 85" fill="#1e90ff" stroke="#0066cc" stroke-width="1.5"/>
+    <path d="M 100 95 Q 90 110 95 120 Q 100 125 105 120 Q 110 110 100 95" fill="#1e90ff" stroke="#0066cc" stroke-width="1.5"/>
+    <circle cx="100" cy="90" r="4" fill="#0066cc"/>
+</svg>
+"""
+
+# JavaScript para reloj en tiempo real
+JS_RELOJ = """
+<script>
+    function actualizarReloj() {
+        const ahora = new Date();
+        const horas = String(ahora.getHours()).padStart(2, '0');
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        const segundos = String(ahora.getSeconds()).padStart(2, '0');
+        const fecha = ahora.toLocaleDateString('es-AR');
+        
+        const elemHora = document.getElementById('reloj-hora');
+        const elemFecha = document.getElementById('reloj-fecha');
+        
+        if (elemHora) elemHora.textContent = horas + ':' + minutos + ':' + segundos;
+        if (elemFecha) elemFecha.textContent = fecha;
+    }
+    
+    actualizarReloj();
+    setInterval(actualizarReloj, 1000);
+</script>
+"""
+
 # CSS Moderno tipo Dashboard
-st.markdown("""
+st.markdown(f"""
 <style>
     /* Fondo general */
-    .stApp {
+    .stApp {{
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         color: #e2e8f0;
-    }
+    }}
     
     /* Sidebar moderno */
-    section[data-testid="stSidebar"] {
+    section[data-testid="stSidebar"] {{
         background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
         border-right: 2px solid #10b981;
-    }
+    }}
     
     /* Header con logo */
-    .main-header {
+    .main-header {{
         display: flex;
         align-items: center;
         justify-content: center;
@@ -42,11 +100,11 @@ st.markdown("""
         max-width: 900px;
         box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
         border: 2px solid #10b981;
-    }
+    }}
     
-    .header-logo {
-        width: 80px;
-        height: 80px;
+    .header-logo {{
+        width: 90px;
+        height: 90px;
         border-radius: 50%;
         background: #0f172a;
         display: flex;
@@ -54,9 +112,10 @@ st.markdown("""
         justify-content: center;
         border: 3px solid #10b981;
         box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
-    }
+        flex-shrink: 0;
+    }}
     
-    .header-text h1 {
+    .header-text h1 {{
         color: #10b981;
         font-size: 2em;
         margin: 0;
@@ -64,77 +123,76 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 2px;
         text-align: center;
-    }
+    }}
     
-    .header-text p {
+    .header-text p {{
         color: #94a3b8;
         margin: 5px 0 0 0;
         font-size: 0.9em;
         text-align: center;
-    }
+    }}
     
     /* Login Card moderna - CENTRADA */
-    .login-container {
+    .login-container {{
         max-width: 500px;
         margin: 80px auto;
         padding: 0 20px;
-    }
+    }}
     
-    .login-card {
+    .login-card {{
         padding: 50px 40px;
         background: linear-gradient(145deg, #1e293b, #0f172a);
         border-radius: 25px;
         box-shadow: 0 15px 50px rgba(16, 185, 129, 0.3);
         border: 3px solid #10b981;
         text-align: center;
-    }
+    }}
     
-    .login-icon {
-        font-size: 4em;
+    .login-icon {{
         margin-bottom: 20px;
-    }
+    }}
     
-    .login-title {
+    .login-title {{
         font-size: 2.2em;
         font-weight: bold;
         color: #10b981;
         margin-bottom: 10px;
         text-transform: uppercase;
-    }
+    }}
     
-    .login-subtitle {
+    .login-subtitle {{
         color: #94a3b8;
         margin-bottom: 40px;
         font-style: italic;
         font-size: 0.95em;
-    }
+    }}
     
     /* Tarjetas de estadísticas */
-    .stat-card {
+    .stat-card {{
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         border-radius: 15px;
         padding: 25px;
         margin: 10px 0;
         border: 2px solid #10b981;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-    }
+    }}
     
-    .stat-value {
+    .stat-value {{
         font-size: 2.5em;
         font-weight: bold;
         color: #10b981;
         margin: 10px 0;
-    }
+    }}
     
-    .stat-label {
+    .stat-label {{
         color: #94a3b8;
         font-size: 0.9em;
         text-transform: uppercase;
         letter-spacing: 1px;
-    }
+    }}
     
     /* Botones modernos */
-    .stButton > button {
+    .stButton > button {{
         background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
         color: white !important;
         border: none !important;
@@ -145,101 +203,101 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
         transition: all 0.3s ease !important;
         width: 100%;
-    }
+    }}
     
-    .stButton > button:hover {
+    .stButton > button:hover {{
         background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
         box-shadow: 0 6px 25px rgba(16, 185, 129, 0.6) !important;
         transform: translateY(-2px) !important;
-    }
+    }}
     
     /* Inputs modernos */
     .stTextInput > div > div > input, 
     .stSelectbox > div > div > div, 
-    .stTextArea > div > div > textarea {
+    .stTextArea > div > div > textarea {{
         background-color: #0f172a !important;
         color: #e2e8f0 !important;
         border: 2px solid #10b981 !important;
         border-radius: 12px !important;
         padding: 12px !important;
         font-size: 1em !important;
-    }
+    }}
     
     .stTextInput > div > div > input:focus, 
-    .stSelectbox > div > div > div:focus {
+    .stSelectbox > div > div > div:focus {{
         border-color: #4CAF50 !important;
         box-shadow: 0 0 15px rgba(16, 185, 129, 0.5) !important;
-    }
+    }}
     
     /* Dataframes */
-    .dataframe {
+    .dataframe {{
         background-color: #1e293b !important;
         color: #e2e8f0 !important;
         border-radius: 10px;
         overflow: hidden;
-    }
+    }}
     
-    .dataframe th {
+    .dataframe th {{
         background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
         color: white !important;
         font-weight: bold;
         padding: 12px;
-    }
+    }}
     
-    .dataframe td {
+    .dataframe td {{
         background-color: #0f172a !important;
         padding: 10px;
-    }
+    }}
     
     /* Tabs modernos */
-    .stTabs [data-baseweb="tab-list"] {
+    .stTabs [data-baseweb="tab-list"] {{
         gap: 10px;
         background: #1e293b;
         padding: 10px;
         border-radius: 15px;
-    }
+    }}
     
-    .stTabs [data-baseweb="tab"] {
+    .stTabs [data-baseweb="tab"] {{
         background-color: #0f172a;
         border-radius: 10px;
         color: #94a3b8;
         padding: 12px 25px;
         border: 2px solid transparent;
-    }
+    }}
     
-    .stTabs [aria-selected="true"] {
+    .stTabs [aria-selected="true"] {{
         background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
         color: white !important;
         border: 2px solid #4CAF50;
-    }
+    }}
     
     /* Métricas */
-    [data-testid="stMetric"] {
+    [data-testid="stMetric"] {{
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         padding: 15px;
         border-radius: 12px;
         border: 2px solid #10b981;
-    }
+    }}
     
-    [data-testid="stMetricValue"] {
+    [data-testid="stMetricValue"] {{
         color: #10b981 !important;
-    }
+    }}
     
-    [data-testid="stMetricLabel"] {
+    [data-testid="stMetricLabel"] {{
         color: #94a3b8 !important;
-    }
+    }}
     
     /* Footer */
-    .main-footer {
+    .main-footer {{
         text-align: center;
         padding: 25px;
         margin-top: 50px;
         color: #64748b;
         border-top: 2px solid #10b981;
-    }
+    }}
     
     /* Sidebar */
-    .sidebar-header {
+    .sidebar-header {{
         color: #10b981;
         font-size: 1.2em;
         font-weight: bold;
@@ -247,31 +305,33 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 1px;
         text-align: center;
-    }
+    }}
     
-    /* Hora en sidebar */
-    .clock-box {
+    /* Reloj en tiempo real */
+    .clock-box {{
         text-align: center;
         padding: 15px;
         background: #0f172a;
         border-radius: 12px;
         border: 2px solid #10b981;
         margin: 10px 0;
-    }
+    }}
     
-    .clock-label {
+    .clock-label {{
         color: #94a3b8;
         font-size: 0.85em;
         margin-bottom: 5px;
-    }
+    }}
     
-    .clock-value {
+    .clock-value {{
         color: #10b981;
         font-size: 1.6em;
         font-weight: bold;
-        font-family: monospace;
-    }
+        font-family: 'Courier New', monospace;
+        letter-spacing: 2px;
+    }}
 </style>
+{JS_RELOJ}
 """, unsafe_allow_html=True)
 
 # ==================== CONSTANTES ====================
@@ -487,13 +547,12 @@ def calcular_estadisticas():
         "total_apresto": total_apresto, "aulas_apresto": aulas_apresto
     }
 
-# ==================== LOGIN CENTRADO ====================
-def pantalla_login():
-    # Header con logo centrado
-    st.markdown("""
+# ==================== HEADER CON LOGO ====================
+def mostrar_header():
+    st.markdown(f"""
     <div class="main-header">
         <div class="header-logo">
-            <div style="font-size: 3em;">👮‍️</div>
+            {LOGO_ESPADAS}
         </div>
         <div class="header-text">
             <h1>SISTEMA DE NOVEDADES</h1>
@@ -501,12 +560,15 @@ def pantalla_login():
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+# ==================== LOGIN ====================
+def pantalla_login():
+    mostrar_header()
     
-    # Login centrado
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     st.markdown('<div class="login-card">', unsafe_allow_html=True)
-    st.markdown('<div class="login-icon"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="login-title">ACCESO RESTRINGIDO</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="login-icon">{LOGO_ESPADAS}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-title">🔐 ACCESO RESTRINGIDO</div>', unsafe_allow_html=True)
     st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
     
     with st.form("login_form", clear_on_submit=False):
@@ -547,33 +609,22 @@ if 'nov_counter' not in st.session_state: st.session_state['nov_counter'] = 0
 if 'rac_counter' not in st.session_state: st.session_state['rac_counter'] = 0
 
 # ==================== HEADER ====================
-st.markdown("""
-<div class="main-header">
-    <div class="header-logo">
-        <div style="font-size: 3em;">👮‍♂️</div>
-    </div>
-    <div class="header-text">
-        <h1>SISTEMA DE NOVEDADES</h1>
-        <p>ESCUADRÓN H "CABO MARCELO GODOY" - AÑO 2026</p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+mostrar_header()
 st.markdown("---")
 
-# ==================== SIDEBAR ====================
+# ==================== SIDEBAR CON RELOJ EN TIEMPO REAL ====================
 with st.sidebar:
     st.markdown('<div class="sidebar-header">📊 PANEL DE CONTROL</div>', unsafe_allow_html=True)
     
-    # Fecha y Hora
-    ahora = datetime.now()
+    # Fecha y Hora en tiempo real (JavaScript)
     st.markdown('<div class="clock-box">', unsafe_allow_html=True)
     st.markdown('<div class="clock-label">📅 Fecha</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="clock-value">{ahora.strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="clock-value" id="reloj-fecha">--/--/----</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="clock-box" style="margin-top: 10px;">', unsafe_allow_html=True)
     st.markdown('<div class="clock-label">🕐 Hora</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="clock-value">{ahora.strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="clock-value" id="reloj-hora">--:--:--</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
@@ -591,7 +642,7 @@ with st.sidebar:
         st.markdown("---")
         st.markdown('<div class="stat-card">', unsafe_allow_html=True)
         st.markdown('<div class="stat-label">📚 POR CURSO</div>', unsafe_allow_html=True)
-        st.metric(" Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
+        st.metric("🎓 Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
         st.metric("🛡️ Aux. Operativo", f"{stats['presentes_cao']}/{stats['total_cao']}")
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -610,7 +661,7 @@ with st.sidebar:
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    " Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
+    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", " Novedades", "🍽️ Racionamiento", "📊 FE por Aula", " Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
@@ -619,7 +670,7 @@ with tab1:
     col1, col2 = st.columns([1, 2])
     with col1:
         st.markdown('<div class="stat-card">', unsafe_allow_html=True)
-        st.subheader(" Importar Excel")
+        st.subheader("📤 Importar Excel")
         archivo_excel = st.file_uploader("Selecciona archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
         if archivo_excel is not None:
             if st.button("💾 Importar Personal", type="primary", use_container_width=True):
@@ -655,7 +706,7 @@ with tab1:
 
 # ==================== TAB 2: HORARIOS ====================
 with tab2:
-    st.header(" Configuración de Horarios")
+    st.header("🏫 Configuración de Horarios")
     st.info(f"AULAS: {', '.join(AULAS)}")
     
     horarios_actuales = st.session_state.get('horarios', [])
@@ -706,9 +757,9 @@ with tab4:
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
             motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
-            observaciones = st.text_area(" Observaciones:", height=100, key="nov_obs")
+            observaciones = st.text_area("📝 Observaciones:", height=100, key="nov_obs")
         
-        if st.button(" Guardar Novedad", type="primary", use_container_width=True):
+        if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
                 nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
@@ -721,7 +772,7 @@ with tab4:
 
 # ==================== TAB 5: RACIONAMIENTO ====================
 with tab5:
-    st.header("🍽️ Registro de Racionamiento")
+    st.header("️ Registro de Racionamiento")
     empleados = st.session_state.get('empleados', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
     
