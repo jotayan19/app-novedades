@@ -5,24 +5,14 @@ import csv
 import io
 import requests
 import base64
-import time
 
 # ==================== CONFIGURACIÓN ====================
 st.set_page_config(
     page_title="SISTEMA DE NOVEDADES",
-    page_icon="‍♂️",
+    page_icon="👮‍♂️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Logo de Gendarmería en SVG mejorado
-LOGO_GENDARMERIA_SVG = """
-<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="45" fill="#1e3a5f" stroke="#10b981" stroke-width="3"/>
-    <path d="M 50 15 L 55 35 L 75 35 L 60 48 L 65 68 L 50 55 L 35 68 L 40 48 L 25 35 L 45 35 Z" fill="#10b981"/>
-    <text x="50" y="88" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">GNA</text>
-</svg>
-"""
 
 # CSS Moderno tipo Dashboard
 st.markdown("""
@@ -43,18 +33,20 @@ st.markdown("""
     .main-header {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 20px;
-        padding: 25px;
+        padding: 30px;
         background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
-        border-radius: 15px;
-        margin-bottom: 30px;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        border-radius: 20px;
+        margin: 20px auto;
+        max-width: 900px;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
         border: 2px solid #10b981;
     }
     
     .header-logo {
-        width: 90px;
-        height: 90px;
+        width: 80px;
+        height: 80px;
         border-radius: 50%;
         background: #0f172a;
         display: flex;
@@ -66,44 +58,55 @@ st.markdown("""
     
     .header-text h1 {
         color: #10b981;
-        font-size: 2.2em;
+        font-size: 2em;
         margin: 0;
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 2px;
+        text-align: center;
     }
     
     .header-text p {
         color: #94a3b8;
         margin: 5px 0 0 0;
-        font-size: 0.95em;
+        font-size: 0.9em;
+        text-align: center;
     }
     
-    /* Login Card moderna */
-    .login-card {
+    /* Login Card moderna - CENTRADA */
+    .login-container {
         max-width: 500px;
-        margin: 50px auto;
-        padding: 40px;
+        margin: 80px auto;
+        padding: 0 20px;
+    }
+    
+    .login-card {
+        padding: 50px 40px;
         background: linear-gradient(145deg, #1e293b, #0f172a);
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
-        border: 2px solid #10b981;
+        border-radius: 25px;
+        box-shadow: 0 15px 50px rgba(16, 185, 129, 0.3);
+        border: 3px solid #10b981;
+        text-align: center;
+    }
+    
+    .login-icon {
+        font-size: 4em;
+        margin-bottom: 20px;
     }
     
     .login-title {
-        font-size: 2em;
+        font-size: 2.2em;
         font-weight: bold;
         color: #10b981;
         margin-bottom: 10px;
-        text-align: center;
         text-transform: uppercase;
     }
     
     .login-subtitle {
-        text-align: center;
         color: #94a3b8;
-        margin-bottom: 30px;
+        margin-bottom: 40px;
         font-style: italic;
+        font-size: 0.95em;
     }
     
     /* Tarjetas de estadísticas */
@@ -114,12 +117,6 @@ st.markdown("""
         margin: 10px 0;
         border: 2px solid #10b981;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-        transition: transform 0.3s ease;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
     }
     
     .stat-value {
@@ -141,16 +138,18 @@ st.markdown("""
         background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         font-weight: bold !important;
-        padding: 10px 25px !important;
+        padding: 12px 30px !important;
+        font-size: 1.1em !important;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
         transition: all 0.3s ease !important;
+        width: 100%;
     }
     
     .stButton > button:hover {
         background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6) !important;
+        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.6) !important;
         transform: translateY(-2px) !important;
     }
     
@@ -161,13 +160,15 @@ st.markdown("""
         background-color: #0f172a !important;
         color: #e2e8f0 !important;
         border: 2px solid #10b981 !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+        font-size: 1em !important;
     }
     
     .stTextInput > div > div > input:focus, 
     .stSelectbox > div > div > div:focus {
         border-color: #4CAF50 !important;
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5) !important;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5) !important;
     }
     
     /* Dataframes */
@@ -212,14 +213,6 @@ st.markdown("""
         border: 2px solid #4CAF50;
     }
     
-    /* Alertas */
-    .stAlert {
-        background-color: #1e293b !important;
-        border-left: 4px solid #10b981 !important;
-        color: #e2e8f0 !important;
-        border-radius: 10px;
-    }
-    
     /* Métricas */
     [data-testid="stMetric"] {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -239,39 +232,50 @@ st.markdown("""
     /* Footer */
     .main-footer {
         text-align: center;
-        padding: 20px;
+        padding: 25px;
         margin-top: 50px;
         color: #64748b;
-        border-top: 1px solid #10b981;
+        border-top: 2px solid #10b981;
     }
     
-    /* Sidebar items */
+    /* Sidebar */
     .sidebar-header {
         color: #10b981;
-        font-size: 1.3em;
+        font-size: 1.2em;
         font-weight: bold;
-        margin: 20px 0 10px 0;
+        margin: 20px 0 15px 0;
         text-transform: uppercase;
         letter-spacing: 1px;
+        text-align: center;
     }
     
-    /* Hora en tiempo real */
-    .realtime-clock {
-        font-family: 'Courier New', monospace;
-        font-size: 1.8em;
-        font-weight: bold;
-        color: #10b981;
-        background: #0f172a;
-        padding: 15px;
-        border-radius: 10px;
-        border: 2px solid #10b981;
+    /* Hora en sidebar */
+    .clock-box {
         text-align: center;
+        padding: 15px;
+        background: #0f172a;
+        border-radius: 12px;
+        border: 2px solid #10b981;
+        margin: 10px 0;
+    }
+    
+    .clock-label {
+        color: #94a3b8;
+        font-size: 0.85em;
+        margin-bottom: 5px;
+    }
+    
+    .clock-value {
+        color: #10b981;
+        font-size: 1.6em;
+        font-weight: bold;
+        font-family: monospace;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== CONSTANTES Y CONFIGURACIÓN GITHUB ====================
-USUARIO_CORRECTO = "DRAGPRJ"  # Usuario simplificado
+# ==================== CONSTANTES ====================
+USUARIO_CORRECTO = "DRAGJOTAYANLEONEL"
 CONTRASENA_CORRECTA = "Drag2026"
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
@@ -483,12 +487,13 @@ def calcular_estadisticas():
         "total_apresto": total_apresto, "aulas_apresto": aulas_apresto
     }
 
-# ==================== HEADER CON LOGO ====================
-def mostrar_header():
-    st.markdown(f"""
+# ==================== LOGIN CENTRADO ====================
+def pantalla_login():
+    # Header con logo centrado
+    st.markdown("""
     <div class="main-header">
         <div class="header-logo">
-            {LOGO_GENDARMERIA_SVG}
+            <div style="font-size: 3em;">👮‍️</div>
         </div>
         <div class="header-text">
             <h1>SISTEMA DE NOVEDADES</h1>
@@ -496,28 +501,27 @@ def mostrar_header():
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-# ==================== LOGIN ====================
-def pantalla_login():
-    mostrar_header()
     
+    # Login centrado
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
     st.markdown('<div class="login-card">', unsafe_allow_html=True)
-    st.markdown('<div class="login-title">🔐 ACCESO RESTRINGIDO</div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-icon"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-title">ACCESO RESTRINGIDO</div>', unsafe_allow_html=True)
     st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
     
-    with st.form("login_form", clear_on_submit=True):
-        usuario = st.text_input("👤 Usuario", placeholder="DRAGPRJ", label_visibility="collapsed")
-        contrasena = st.text_input(" Contraseña", type="password", placeholder="Ingrese su contraseña", label_visibility="collapsed")
-        submitted = st.form_submit_button("🚀 INGRESAR AL SISTEMA", use_container_width=True)
+    with st.form("login_form", clear_on_submit=False):
+        usuario = st.text_input("👤 Usuario", placeholder="Ingrese su usuario")
+        contrasena = st.text_input("🔒 Contraseña", type="password", placeholder="Ingrese su contraseña")
+        submitted = st.form_submit_button("🚀 INGRESAR AL SISTEMA")
         
         if submitted:
             if usuario == USUARIO_CORRECTO and contrasena == CONTRASENA_CORRECTA:
                 st.session_state['logueado'] = True
                 st.rerun()
             else:
-                st.error("❌ Credenciales incorrectas.")
+                st.error("❌ Usuario o contraseña incorrectos")
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
     st.markdown('<div style="text-align: center; color: #64748b; margin-top: 30px; font-size: 0.85em;">Sistema de Gendarmería Nacional Argentina © 2026</div>', unsafe_allow_html=True)
 
 # ==================== INICIALIZACIÓN ====================
@@ -542,29 +546,35 @@ if 'plan_llamada' not in st.session_state: st.session_state['plan_llamada'] = ca
 if 'nov_counter' not in st.session_state: st.session_state['nov_counter'] = 0
 if 'rac_counter' not in st.session_state: st.session_state['rac_counter'] = 0
 
-# ==================== HEADER PRINCIPAL ====================
-mostrar_header()
+# ==================== HEADER ====================
+st.markdown("""
+<div class="main-header">
+    <div class="header-logo">
+        <div style="font-size: 3em;">👮‍♂️</div>
+    </div>
+    <div class="header-text">
+        <h1>SISTEMA DE NOVEDADES</h1>
+        <p>ESCUADRÓN H "CABO MARCELO GODOY" - AÑO 2026</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 st.markdown("---")
 
-# ==================== SIDEBAR MODERNO CON HORA EN TIEMPO REAL ====================
+# ==================== SIDEBAR ====================
 with st.sidebar:
     st.markdown('<div class="sidebar-header">📊 PANEL DE CONTROL</div>', unsafe_allow_html=True)
-    st.markdown("---")
     
-    # Fecha y Hora en tiempo real
+    # Fecha y Hora
     ahora = datetime.now()
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown('<div style="text-align: center; padding: 10px; background: #0f172a; border-radius: 10px; border: 2px solid #10b981;">', unsafe_allow_html=True)
-        st.markdown('<div style="color: #94a3b8; font-size: 0.85em;">📅 Fecha</div>', unsafe_allow_html=True)
-        st.markdown(f'<div style="color: #10b981; font-size: 1.5em; font-weight: bold;">{ahora.strftime("%d/%m")}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="clock-box">', unsafe_allow_html=True)
+    st.markdown('<div class="clock-label">📅 Fecha</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="clock-value">{ahora.strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    with col2:
-        st.markdown('<div style="text-align: center; padding: 10px; background: #0f172a; border-radius: 10px; border: 2px solid #10b981;">', unsafe_allow_html=True)
-        st.markdown('<div style="color: #94a3b8; font-size: 0.85em;">🕐 Hora</div>', unsafe_allow_html=True)
-        st.markdown(f'<div style="color: #10b981; font-size: 1.5em; font-weight: bold; font-family: monospace;">{ahora.strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="clock-box" style="margin-top: 10px;">', unsafe_allow_html=True)
+    st.markdown('<div class="clock-label">🕐 Hora</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="clock-value">{ahora.strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -581,38 +591,38 @@ with st.sidebar:
         st.markdown("---")
         st.markdown('<div class="stat-card">', unsafe_allow_html=True)
         st.markdown('<div class="stat-label">📚 POR CURSO</div>', unsafe_allow_html=True)
-        st.metric("🎓 Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
+        st.metric(" Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
         st.metric("🛡️ Aux. Operativo", f"{stats['presentes_cao']}/{stats['total_cao']}")
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     st.markdown('<div class="sidebar-header">💾 GUARDADO</div>', unsafe_allow_html=True)
     if GITHUB_TOKEN:
-        st.success("✅ Auto-guardado activado\nLos datos se sincronizan con GitHub")
+        st.success("✅ Auto-guardado activado")
     else:
         st.warning("⚠️ Sin token GitHub")
         if st.download_button("📥 Descargar respaldo", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True): pass
     
     st.markdown("---")
-    if st.button(" Cerrar Sesión", type="primary", use_container_width=True):
+    if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
         st.session_state['logueado'] = False
         st.rerun()
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
+    " Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
 with tab1:
-    st.header(" Gestión de Personal")
+    st.header("👥 Gestión de Personal")
     col1, col2 = st.columns([1, 2])
     with col1:
         st.markdown('<div class="stat-card">', unsafe_allow_html=True)
-        st.subheader("📤 Importar Excel")
+        st.subheader(" Importar Excel")
         archivo_excel = st.file_uploader("Selecciona archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
         if archivo_excel is not None:
-            if st.button(" Importar Personal", type="primary", use_container_width=True):
+            if st.button("💾 Importar Personal", type="primary", use_container_width=True):
                 try:
                     df = pd.read_excel(archivo_excel)
                     df.columns = [str(c).strip().upper() for c in df.columns]
@@ -645,7 +655,7 @@ with tab1:
 
 # ==================== TAB 2: HORARIOS ====================
 with tab2:
-    st.header("🏫 Configuración de Horarios")
+    st.header(" Configuración de Horarios")
     st.info(f"AULAS: {', '.join(AULAS)}")
     
     horarios_actuales = st.session_state.get('horarios', [])
@@ -672,7 +682,7 @@ with tab2:
 
 # ==================== TAB 3: PLAN LLAMADA ====================
 with tab3:
-    st.header(" Plan de Llamada")
+    st.header("📞 Plan de Llamada")
     empleados = st.session_state.get('empleados', [])
     if empleados:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
@@ -695,10 +705,10 @@ with tab4:
             categoria = st.selectbox("📂 Categoría:", [""] + list(MOTIVOS.keys()), key="nov_cat")
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
-            motivo = st.selectbox(" Motivo:", [""] + motivos_disponibles, key="nov_mot")
-            observaciones = st.text_area("📝 Observaciones:", height=100, key="nov_obs")
+            motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
+            observaciones = st.text_area(" Observaciones:", height=100, key="nov_obs")
         
-        if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
+        if st.button(" Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
                 nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
@@ -723,7 +733,7 @@ with tab5:
         with col2:
             observaciones = st.text_input("📝 Observaciones:", key="rac_obs")
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button(" Guardar Almuerzo", type="primary", use_container_width=True):
+            if st.button("💾 Guardar Almuerzo", type="primary", use_container_width=True):
                 if empleado_sel:
                     nombre = empleado_sel.split(" - ", 1)[1]
                     st.session_state['racionamiento'].append([nombre, "Almuerzo", observaciones, hoy])
