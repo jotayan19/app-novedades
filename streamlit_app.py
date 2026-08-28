@@ -5,52 +5,252 @@ import csv
 import io
 import requests
 import base64
-import json
 
-# ==================== CONFIGURACIÓN Y ÍCONO IPHONE ====================
+# ==================== CONFIGURACIÓN ====================
 st.set_page_config(
     page_title="SISTEMA DE NOVEDADES",
-    page_icon="👮‍♂️",
+    page_icon="👮‍️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Inyección de HTML para el ícono en iPhone (Apple Touch Icon)
-# Usamos un escudo verde en base64 para que no dependa de links externos
-ICONO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAFJklEQVRoge2ZS2gUQRCGv5md2cxms5tsNrvZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZ......" 
-# Nota: Por espacio, usaremos un emoji estándar en set_page_config y un CSS para el icono si fuera necesario, 
-# pero Streamlit Cloud maneja mejor el page_icon. Para iPhone, lo ideal es usar una URL de imagen raw de GitHub.
-# Vamos a usar una técnica más robusta inyectando el link al icono que subiremos a tu repo.
+# Logo de Gendarmería en Base64 (para que cargue rápido y sin links externos)
+LOGO_GENDARMERIA = """
+<svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <!-- Escudo simplificado de Gendarmería -->
+    <circle cx="60" cy="40" r="35" fill="#1e3a5f" stroke="#4CAF50" stroke-width="3"/>
+    <text x="60" y="50" text-anchor="middle" fill="#4CAF50" font-size="24" font-weight="bold">GNA</text>
+</svg>
+"""
 
+# CSS Moderno tipo Dashboard
 st.markdown("""
 <style>
-    .stApp { background-color: #121212; color: #e0e0e0; }
-    h1, h2, h3, h4, h5, h6, label, p, span, div { color: #f0f0f0 !important; }
-    section[data-testid="stSidebar"] { background-color: #1e1e1e; border-right: 1px solid #333; }
-    section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2 { color: #4CAF50 !important; }
-    .stButton > button {
-        background-color: #2E5936 !important; color: white !important;
-        border: 1px solid #4CAF50 !important; border-radius: 8px !important;
-        font-weight: bold !important;
+    /* Fondo general */
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #e2e8f0;
     }
-    .stButton > button:hover { background-color: #4CAF50 !important; }
-    .stTextInput > div > div > input, .stSelectbox > div > div > div, .stTextArea > div > div > textarea {
-        background-color: #2c2c2c !important; color: white !important;
-        border: 1px solid #444 !important; border-radius: 8px !important;
+    
+    /* Sidebar moderno */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+        border-right: 2px solid #10b981;
     }
-    .dataframe { background-color: #1e1e1e !important; color: #e0e0e0 !important; }
-    .dataframe th { background-color: #2E5936 !important; color: white !important; }
-    .login-card {
-        max-width: 500px; margin: 80px auto; padding: 40px;
-        background: linear-gradient(145deg, #1e1e1e, #252525);
-        border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        border: 1px solid #333; text-align: center;
+    
+    /* Header con logo */
+    .main-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+        border: 1px solid #10b981;
     }
-    .login-title { font-size: 2.5em; font-weight: bold; color: #4CAF50 !important; margin-bottom: 30px; text-transform: uppercase; }
-    .main-title {
-        text-align: center; font-size: 3.5em; font-weight: bold;
-        color: #4CAF50 !important; margin-top: 20px; margin-bottom: 10px;
+    
+    .header-logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid #4CAF50;
+    }
+    
+    .header-text h1 {
+        color: #10b981;
+        font-size: 2.2em;
+        margin: 0;
+        font-weight: bold;
         text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    
+    .header-text p {
+        color: #94a3b8;
+        margin: 5px 0 0 0;
+        font-size: 0.95em;
+    }
+    
+    /* Login Card moderna */
+    .login-card {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 40px;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+        border: 2px solid #10b981;
+    }
+    
+    .login-title {
+        font-size: 2em;
+        font-weight: bold;
+        color: #10b981;
+        margin-bottom: 10px;
+        text-align: center;
+        text-transform: uppercase;
+    }
+    
+    .login-subtitle {
+        text-align: center;
+        color: #94a3b8;
+        margin-bottom: 30px;
+        font-style: italic;
+    }
+    
+    /* Tarjetas de estadísticas */
+    .stat-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 15px;
+        padding: 25px;
+        margin: 10px 0;
+        border: 2px solid #10b981;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+    
+    .stat-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #10b981;
+        margin: 10px 0;
+    }
+    
+    .stat-label {
+        color: #94a3b8;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    /* Botones modernos */
+    .stButton > button {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: bold !important;
+        padding: 10px 25px !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* Inputs modernos */
+    .stTextInput > div > div > input, 
+    .stSelectbox > div > div > div, 
+    .stTextArea > div > div > textarea {
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
+        border: 2px solid #10b981 !important;
+        border-radius: 10px !important;
+    }
+    
+    .stTextInput > div > div > input:focus, 
+    .stSelectbox > div > div > div:focus {
+        border-color: #4CAF50 !important;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5) !important;
+    }
+    
+    /* Dataframes */
+    .dataframe {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .dataframe th {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: white !important;
+        font-weight: bold;
+        padding: 12px;
+    }
+    
+    .dataframe td {
+        background-color: #0f172a !important;
+        padding: 10px;
+    }
+    
+    /* Tabs modernos */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background: #1e293b;
+        padding: 10px;
+        border-radius: 15px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: #0f172a;
+        border-radius: 10px;
+        color: #94a3b8;
+        padding: 12px 25px;
+        border: 2px solid transparent;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: white !important;
+        border: 2px solid #4CAF50;
+    }
+    
+    /* Alertas */
+    .stAlert {
+        background-color: #1e293b !important;
+        border-left: 4px solid #10b981 !important;
+        color: #e2e8f0 !important;
+        border-radius: 10px;
+    }
+    
+    /* Métricas */
+    [data-testid="stMetric"] {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        padding: 15px;
+        border-radius: 12px;
+        border: 2px solid #10b981;
+    }
+    
+    [data-testid="stMetricValue"] {
+        color: #10b981 !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        color: #94a3b8 !important;
+    }
+    
+    /* Footer */
+    .main-footer {
+        text-align: center;
+        padding: 20px;
+        margin-top: 50px;
+        color: #64748b;
+        border-top: 1px solid #10b981;
+    }
+    
+    /* Sidebar items */
+    .sidebar-header {
+        color: #10b981;
+        font-size: 1.3em;
+        font-weight: bold;
+        margin: 20px 0 10px 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -59,7 +259,6 @@ st.markdown("""
 USUARIO_CORRECTO = "DRAGJOTAYANLEONEL"
 CONTRASENA_CORRECTA = "Drag2026"
 
-# Configuración de GitHub API
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 REPO_OWNER = "jotayan19"
 REPO_NAME = "app-novedades"
@@ -83,9 +282,8 @@ MOTIVOS = {
     "Presente pero fuera del escuadron": ["GUARDIA DIURNA", "GUARDIA NOCTURNA", "FORMACION", "PRACTICA DE DESFILE"]
 }
 
-# ==================== FUNCIONES DE GITHUB (GUARDADO AUTOMÁTICO) ====================
+# ==================== FUNCIONES DE GITHUB ====================
 def get_github_file_sha(filename):
-    """Obtiene el SHA actual del archivo para poder actualizarlo"""
     if not GITHUB_TOKEN: return None
     url = f"{BASE_URL}/{filename}?ref={BRANCH}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
@@ -97,18 +295,11 @@ def get_github_file_sha(filename):
     return None
 
 def save_to_github(filename, content_str):
-    """Guarda o actualiza un archivo en GitHub"""
     if not GITHUB_TOKEN: return False
-    
     url = f"{BASE_URL}/{filename}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-    
-    # Codificar contenido a base64
     content_b64 = base64.b64encode(content_str.encode('utf-8')).decode('utf-8')
-    
-    # Obtener SHA si existe
     sha = get_github_file_sha(filename)
-    
     payload = {
         "message": f"Auto-save: {filename}",
         "content": content_b64,
@@ -116,7 +307,6 @@ def save_to_github(filename, content_str):
     }
     if sha:
         payload["sha"] = sha
-        
     try:
         resp = requests.put(url, json=payload, headers=headers)
         return resp.status_code in [200, 201]
@@ -125,12 +315,9 @@ def save_to_github(filename, content_str):
         return False
 
 def load_from_github(filename):
-    """Carga datos desde GitHub"""
     if not GITHUB_TOKEN: return []
-    
     url = f"{BASE_URL}/{filename}?ref={BRANCH}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-    
     try:
         resp = requests.get(url, headers=headers)
         if resp.status_code == 200:
@@ -186,7 +373,6 @@ def obtener_horario_aula(aula):
     horarios = st.session_state.get('horarios', [])
     aula_upper = aula.strip().upper()
     aula_base = aula_upper.split('(')[0].strip()
-    
     for hor in horarios:
         if len(hor) >= 2:
             hor_aula = hor[0].strip().upper()
@@ -230,15 +416,7 @@ def calcular_estadisticas():
     total_cao = sum(1 for e in empleados if determinar_curso(e[0]) == "Auxiliar Operativo")
     
     ausentes_novedades = len(novedades_hoy)
-    
-    ausentes_apresto = 0
-    for e in empleados:
-        if len(e) >= 5:
-            aula = e[4].strip().upper()
-            horario = obtener_horario_aula(aula)
-            if horario == "apresto en domicilio":
-                ausentes_apresto += 1
-    
+    ausentes_apresto = sum(1 for e in empleados if len(e) >= 5 and obtener_horario_aula(e[4]) == "apresto en domicilio")
     ausentes_total = ausentes_novedades + ausentes_apresto
     presentes_total = total_general - ausentes_total
     
@@ -263,131 +441,131 @@ def calcular_estadisticas():
                 aulas_dict[aula] = {"total": 0, "ausentes": 0, "horario": horario, "curso": curso}
             
             aulas_dict[aula]["total"] += 1
-            
             tiene_novedad = any(n[0].upper().strip() == nombre.upper().strip() for n in novedades_hoy)
             if tiene_novedad or horario == "apresto en domicilio":
                 aulas_dict[aula]["ausentes"] += 1
     
-    presentes_0620 = 0
-    for e in empleados:
-        if len(e) >= 5:
-            aula = e[4].strip().upper()
-            horario = obtener_horario_aula(aula)
-            if horario == "06:20":
-                if not any(n[0].upper().strip() == e[1].upper().strip() for n in novedades_hoy):
-                    presentes_0620 += 1
+    presentes_0620 = sum(1 for e in empleados if len(e) >= 5 and obtener_horario_aula(e[4]) == "06:20" and not any(n[0].upper().strip() == e[1].upper().strip() for n in novedades_hoy))
     
     aulas_diferenciado = {}
     total_diferenciado = 0
-    
     for aula, info in aulas_dict.items():
         horario = info["horario"]
         if horario and horario != "06:20" and horario != "apresto en domicilio":
             presentes_aula = info["total"] - info["ausentes"]
-            aulas_diferenciado[aula] = {
-                "total": presentes_aula,
-                "horario": horario,
-                "curso": info["curso"]
-            }
+            aulas_diferenciado[aula] = {"total": presentes_aula, "horario": horario, "curso": info["curso"]}
             total_diferenciado += presentes_aula
     
-    aulas_apresto = {}
-    total_apresto = 0
-    for aula, info in aulas_dict.items():
-        if info["horario"] == "apresto en domicilio":
-            aulas_apresto[aula] = info["total"]
-            total_apresto += info["total"]
+    aulas_apresto = {aula: info["total"] for aula, info in aulas_dict.items() if info["horario"] == "apresto en domicilio"}
+    total_apresto = sum(aulas_apresto.values())
     
     return {
         "total_general": total_general, "total_3": total_3, "total_cao": total_cao,
         "presentes_total": presentes_total, "presentes_3": presentes_3, "presentes_cao": presentes_cao,
         "ausentes_total": ausentes_total, "ausentes_3": ausentes_3, "ausentes_cao": ausentes_cao,
-        "presentes_0620": presentes_0620,
-        "aulas_dict": aulas_dict, "novedades_hoy": novedades_hoy,
-        "total_diferenciado": total_diferenciado,
-        "aulas_diferenciado": aulas_diferenciado,
-        "total_apresto": total_apresto,
-        "aulas_apresto": aulas_apresto
+        "presentes_0620": presentes_0620, "aulas_dict": aulas_dict, "novedades_hoy": novedades_hoy,
+        "total_diferenciado": total_diferenciado, "aulas_diferenciado": aulas_diferenciado,
+        "total_apresto": total_apresto, "aulas_apresto": aulas_apresto
     }
+
+# ==================== HEADER CON LOGO ====================
+def mostrar_header():
+    st.markdown(f"""
+    <div class="main-header">
+        <div class="header-logo">
+            <div style="text-align: center; color: #4CAF50; font-size: 2em; font-weight: bold;">👮‍♂️</div>
+        </div>
+        <div class="header-text">
+            <h1>SISTEMA DE NOVEDADES</h1>
+            <p>ESCUADRÓN H "CABO MARCELO GODOY" - AÑO 2026</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==================== LOGIN ====================
 def pantalla_login():
-    col_center = st.columns([1, 2, 1]) 
-    with col_center[1]:
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown('<h1 class="login-title">SISTEMA DE NOVEDADES</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRON H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
+    mostrar_header()
+    
+    st.markdown('<div class="login-card">', unsafe_allow_html=True)
+    st.markdown('<div class="login-title">🔐 ACCESO RESTRINGIDO</div>', unsafe_allow_html=True)
+    st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
+    
+    with st.form("login_form", clear_on_submit=True):
+        usuario = st.text_input("👤 Usuario", placeholder="Ingrese su usuario", label_visibility="collapsed")
+        contrasena = st.text_input(" Contraseña", type="password", placeholder="Ingrese su contraseña", label_visibility="collapsed")
+        submitted = st.form_submit_button("🚀 INGRESAR AL SISTEMA", use_container_width=True)
         
-        with st.form("login_form", clear_on_submit=True):
-            usuario = st.text_input("Usuario", placeholder="Ingrese su usuario", label_visibility="collapsed")
-            contrasena = st.text_input("Contraseña", type="password", placeholder="Ingrese su contraseña", label_visibility="collapsed")
-            submitted = st.form_submit_button("INGRESAR AL SISTEMA", use_container_width=True)
-            
-            if submitted:
-                if usuario == USUARIO_CORRECTO and contrasena == CONTRASENA_CORRECTA:
-                    st.session_state['logueado'] = True
-                    st.rerun()
-                else:
-                    st.error(" Credenciales incorrectas.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+        if submitted:
+            if usuario == USUARIO_CORRECTO and contrasena == CONTRASENA_CORRECTA:
+                st.session_state['logueado'] = True
+                st.rerun()
+            else:
+                st.error("❌ Credenciales incorrectas.")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div style="text-align: center; color: #64748b; margin-top: 30px; font-size: 0.85em;">Sistema de Gendarmería Nacional Argentina © 2026</div>', unsafe_allow_html=True)
 
-# ==================== INICIALIZACIÓN CON CARGA DESDE GITHUB ====================
+# ==================== INICIALIZACIÓN ====================
 if 'logueado' not in st.session_state: st.session_state['logueado'] = False
 if not st.session_state['logueado']:
     pantalla_login()
     st.stop()
 
-# Intentar cargar desde GitHub primero, si falla carga local/vacío
 if 'empleados' not in st.session_state: 
     data = load_from_github(NOMBRES_ARCHIVOS['empleados'])
     st.session_state['empleados'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['empleados'])
-    
 if 'horarios' not in st.session_state: 
     data = load_from_github(NOMBRES_ARCHIVOS['horarios'])
     st.session_state['horarios'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['horarios'])
-    
 if 'novedades' not in st.session_state: 
     data = load_from_github(NOMBRES_ARCHIVOS['novedades'])
     st.session_state['novedades'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['novedades'])
-    
 if 'racionamiento' not in st.session_state: 
     data = load_from_github(NOMBRES_ARCHIVOS['racionamiento'])
     st.session_state['racionamiento'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['racionamiento'])
-    
-if 'plan_llamada' not in st.session_state: 
-    st.session_state['plan_llamada'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['plan_llamada'])
-
+if 'plan_llamada' not in st.session_state: st.session_state['plan_llamada'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['plan_llamada'])
 if 'nov_counter' not in st.session_state: st.session_state['nov_counter'] = 0
 if 'rac_counter' not in st.session_state: st.session_state['rac_counter'] = 0
 
-# ==================== ENCABEZADO ====================
-st.markdown('<h1 class="main-title">SISTEMA DE NOVEDADES</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align: center; color: #aaa; font-size: 1.2em; margin-top: -10px;">DRAGONEANTE PRINCIPAL JOTAYAN MEDINA LEONEL - AÑO 2026</p>', unsafe_allow_html=True)
+# ==================== HEADER PRINCIPAL ====================
+mostrar_header()
 st.markdown("---")
 
-# ==================== SIDEBAR ====================
+# ==================== SIDEBAR MODERNO ====================
 with st.sidebar:
-    st.markdown('<h2 style="color: #4CAF50; text-align: center;">PANEL DE CONTROL</h2>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-header"> PANEL DE CONTROL</div>', unsafe_allow_html=True)
     st.markdown("---")
+    
     c1, c2 = st.columns(2)
     with c1: st.metric("📅 Fecha", datetime.now().strftime('%d/%m/%Y'))
     with c2: st.metric("🕐 Hora", datetime.now().strftime('%H:%M:%S'))
+    
     st.markdown("---")
     
     stats = calcular_estadisticas()
     if stats:
-        st.metric("👥 Fuerza Efectiva", stats["total_general"])
+        st.markdown('<div class="stat-card">', unsafe_allow_html=True)
+        st.markdown('<div class="stat-label"> FUERZA EFECTIVA</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="stat-value">{stats["total_general"]}</div>', unsafe_allow_html=True)
+        st.markdown("---")
         st.metric("✅ Presentes", stats["presentes_total"])
         st.metric("📋 Ausentes", stats["ausentes_total"])
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown('<div class="stat-card">', unsafe_allow_html=True)
+        st.markdown('<div class="stat-label"> POR CURSO</div>', unsafe_allow_html=True)
+        st.metric("🎓 Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
+        st.metric("🛡️ Aux. Operativo", f"{stats['presentes_cao']}/{stats['total_cao']}")
+        st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
-    st.markdown("#### 💾 Estado de Guardado")
+    st.markdown('<div class="sidebar-header">💾 GUARDADO</div>', unsafe_allow_html=True)
     if GITHUB_TOKEN:
-        st.success("✅ Conectado a GitHub\nLos datos se guardan automáticamente")
+        st.success("✅ Auto-guardado activado\nLos datos se sincronizan con GitHub")
     else:
-        st.warning("⚠️ Sin token GitHub\nLos datos se borrarán al salir")
-        if st.download_button("📥 Descargar respaldo CSV", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados_backup.csv", mime="text/csv", use_container_width=True): pass
+        st.warning("⚠️ Sin token GitHub")
+        if st.download_button("📥 Descargar respaldo", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True): pass
     
     st.markdown("---")
     if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
@@ -396,18 +574,19 @@ with st.sidebar:
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
+    " Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
 with tab1:
-    st.header("Gestión de Personal")
+    st.header(" Gestión de Personal")
     col1, col2 = st.columns([1, 2])
     with col1:
+        st.markdown('<div class="stat-card">', unsafe_allow_html=True)
         st.subheader("📤 Importar Excel")
-        archivo_excel = st.file_uploader("Selecciona tu archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
+        archivo_excel = st.file_uploader("Selecciona archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
         if archivo_excel is not None:
-            if st.button("💾 Importar Personal", type="primary", use_container_width=True):
+            if st.button(" Importar Personal", type="primary", use_container_width=True):
                 try:
                     df = pd.read_excel(archivo_excel)
                     df.columns = [str(c).strip().upper() for c in df.columns]
@@ -422,23 +601,25 @@ with tab1:
                             empleados.append([grado, nombre, dni, ce, aula])
                     if empleados:
                         st.session_state['empleados'] = empleados
-                        # GUARDAR EN GITHUB AUTOMÁTICAMENTE
                         if GITHUB_TOKEN:
                             save_to_github(NOMBRES_ARCHIVOS['empleados'], convertir_a_csv(empleados))
                         st.success(f"✅ Se importaron {len(empleados)} empleados")
                         st.rerun()
                 except Exception as e: st.error(f"Error: {str(e)}")
+        st.markdown('</div>', unsafe_allow_html=True)
     with col2:
+        st.markdown('<div class="stat-card">', unsafe_allow_html=True)
         st.subheader("📋 Personal Registrado")
         empleados = st.session_state.get('empleados', [])
         if empleados:
             df_empleados = pd.DataFrame(empleados, columns=['Grado', 'Apellido y Nombre', 'DNI', 'CE', 'Aula'])
             st.dataframe(df_empleados, use_container_width=True, height=400)
         else: st.info("No hay personal registrado.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== TAB 2: HORARIOS ====================
 with tab2:
-    st.header("Configuración de Horarios")
+    st.header("🏫 Configuración de Horarios")
     st.info(f"AULAS: {', '.join(AULAS)}")
     
     horarios_actuales = st.session_state.get('horarios', [])
@@ -453,28 +634,19 @@ with tab2:
                 index_val = 0
                 if horario_actual in OPCIONES_HORARIO: 
                     index_val = OPCIONES_HORARIO.index(horario_actual)
-                
                 horario = st.selectbox(f"AULA {aula}", OPCIONES_HORARIO, index=index_val, key=f"horario_{aula}")
-                if horario: 
-                    nuevos_horarios.append([aula.upper(), horario])
+                if horario: nuevos_horarios.append([aula.upper(), horario])
         
         if st.form_submit_button("💾 Guardar Horarios", type="primary", use_container_width=True):
             st.session_state['horarios'] = nuevos_horarios
-            # GUARDAR EN GITHUB AUTOMÁTICAMENTE
             if GITHUB_TOKEN:
                 save_to_github(NOMBRES_ARCHIVOS['horarios'], convertir_a_csv(nuevos_horarios))
             st.success("✅ Horarios guardados")
             st.rerun()
-    
-    if horarios_actuales:
-        st.write("**Horarios guardados:**")
-        for h in horarios_actuales:
-            if len(h) >= 2:
-                st.write(f"- {h[0]}: {h[1]}")
 
 # ==================== TAB 3: PLAN LLAMADA ====================
 with tab3:
-    st.header("Plan de Llamada")
+    st.header("📞 Plan de Llamada")
     empleados = st.session_state.get('empleados', [])
     if empleados:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
@@ -485,7 +657,7 @@ with tab3:
 
 # ==================== TAB 4: NOVEDADES ====================
 with tab4:
-    st.header("Registro de Novedades")
+    st.header("📋 Registro de Novedades")
     empleados = st.session_state.get('empleados', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
     
@@ -506,17 +678,14 @@ with tab4:
                 nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
                 st.session_state['novedades'].append(nueva_novedad)
                 st.session_state['nov_counter'] += 1
-                
-                # GUARDAR EN GITHUB AUTOMÁTICAMENTE
                 if GITHUB_TOKEN:
                     save_to_github(NOMBRES_ARCHIVOS['novedades'], convertir_a_csv(st.session_state['novedades']))
-                    
                 st.success("✅ Novedad guardada")
                 st.rerun()
 
 # ==================== TAB 5: RACIONAMIENTO ====================
 with tab5:
-    st.header("Registro de Racionamiento")
+    st.header("🍽️ Registro de Racionamiento")
     empleados = st.session_state.get('empleados', [])
     hoy = datetime.now().strftime("%d/%m/%Y")
     
@@ -533,41 +702,22 @@ with tab5:
                     nombre = empleado_sel.split(" - ", 1)[1]
                     st.session_state['racionamiento'].append([nombre, "Almuerzo", observaciones, hoy])
                     st.session_state['rac_counter'] += 1
-                    
-                    # GUARDAR EN GITHUB AUTOMÁTICAMENTE
                     if GITHUB_TOKEN:
                         save_to_github(NOMBRES_ARCHIVOS['racionamiento'], convertir_a_csv(st.session_state['racionamiento']))
-                        
                     st.success("✅ Almuerzo registrado")
                     st.rerun()
-        
-        rac_hoy = [r for r in st.session_state.get('racionamiento', []) if len(r) >= 4 and r[3] == hoy]
-        if rac_hoy:
-            st.write(f"**Total Almuerzos:** {len(rac_hoy)}")
-            for rac in rac_hoy:
-                st.write(f"- {rac[0]}")
 
 # ==================== TAB 6: FE POR AULA ====================
 with tab6:
     st.header("📊 Fuerza Efectiva por Aula")
     stats = calcular_estadisticas()
     if stats and stats['aulas_dict']:
-        datos = []
-        for a, i in sorted(stats["aulas_dict"].items()):
-            aula_display = a
-            datos.append({
-                "Aula": aula_display, 
-                "FE": i["total"], 
-                "Horario": i["horario"] if i["horario"] else "Sin asignar", 
-                "P": i["total"]-i["ausentes"], 
-                "A": i["ausentes"]
-            })
+        datos = [{"Aula": a, "FE": i["total"], "Horario": i["horario"] or "Sin asignar", "P": i["total"]-i["ausentes"], "A": i["ausentes"]} for a, i in sorted(stats["aulas_dict"].items())]
         st.dataframe(pd.DataFrame(datos), use_container_width=True)
 
-# ==================== TAB 7: REPORTES - MINUTA ====================
+# ==================== TAB 7: REPORTES ====================
 with tab7:
-    st.header("Reportes y Minutas")
-    
+    st.header("📝 Reportes y Minutas")
     if st.button("🔄 Generar Minuta Institucional", type="primary", use_container_width=True):
         stats = calcular_estadisticas()
         if not stats: st.error("No hay datos")
@@ -588,81 +738,47 @@ with tab7:
             def obtener_lista_enumerada(motivo):
                 nombres = [n for n in todas_novedades if n[2] == motivo]
                 if not nombres: return ""
-                lista = []
-                for i, n in enumerate(nombres, 1):
-                    grado_abr = obtener_grado_abreviado(n[0])
-                    nombre_completo = obtener_nombre_completo(n[0])
-                    lista.append(f"{i}. {grado_abr} {nombre_completo}")
-                return "\n".join(lista)
+                return "\n".join([f"{i}. {obtener_grado_abreviado(n[0])} {obtener_nombre_completo(n[0])}" for i, n in enumerate(nombres, 1)])
             
-            minuta = f"NOVEDADES ESC \"H\" FECHA: {fecha_minuta}\n"
-            minuta += f"FE: {stats['total_general']}\n"
-            minuta += f"P: {stats['presentes_total']}\n"
-            minuta += f"A: {stats['ausentes_total']}\n"
-            minuta += f"\n\n"
-            minuta += f"FORMADOS PRIMERA OBLIGACIÓN: {numero_a_texto(stats['presentes_0620'])}\n"
-            minuta += f"\n\n"
-            
+            minuta = f"NOVEDADES ESC \"H\" FECHA: {fecha_minuta}\nFE: {stats['total_general']}\nP: {stats['presentes_total']}\nA: {stats['ausentes_total']}\n\n"
+            minuta += f"FORMADOS PRIMERA OBLIGACIÓN: {numero_a_texto(stats['presentes_0620'])}\n\n"
             minuta += f"INGRESO HORARIO DIFERENCIADO: {numero_a_texto(stats['total_diferenciado'])}\n"
             if stats['aulas_diferenciado']:
                 for i, (aula, info) in enumerate(sorted(stats['aulas_diferenciado'].items()), 1):
-                    grado_aula = "ASP III" if info['curso'] == 'Tercer Año' else "ASP I"
-                    minuta += f"{i}. AULA {aula} - {info['total']} {grado_aula} - INGRESO {info['horario']}\n"
-            minuta += f"\n\n"
-            
-            minuta += f"APRESTOS EN SUS DOMICILIOS: {numero_a_texto(stats['total_apresto'])}\n"
+                    grado = "ASP III" if info['curso'] == 'Tercer Año' else "ASP I"
+                    minuta += f"{i}. AULA {aula} - {info['total']} {grado} - INGRESO {info['horario']}\n"
+            minuta += f"\nAPRESTOS EN SUS DOMICILIOS: {numero_a_texto(stats['total_apresto'])}\n"
             if stats['aulas_apresto']:
-                for aula, cantidad in sorted(stats['aulas_apresto'].items()):
-                    minuta += f"  - AULA {aula}: {cantidad} ASPIRANTES\n"
-            minuta += f"\n\n"
-            
-            lista_ssd = obtener_lista_enumerada("SSD")
-            if lista_ssd: minuta += f"SSD: {numero_a_texto(cant_ssd)}.-\n{lista_ssd}\n"
-            else: minuta += f"SSD: {numero_a_texto(cant_ssd)}.-\n"
-            minuta += f"\n\n"
-            
-            lista_aut = obtener_lista_enumerada("AUTORIZADO")
-            if lista_aut: minuta += f"AUTORIZADOS: {numero_a_texto(cant_aut)}.-\n{lista_aut}\n"
-            else: minuta += f"AUTORIZADOS: {numero_a_texto(cant_aut)}.-\n"
-            minuta += f"\n\n"
-            
-            lista_lao_cuenta = obtener_lista_enumerada("A CUENTA DE LAO")
-            if lista_lao_cuenta: minuta += f"A CUENTA DE LAO26: {numero_a_texto(cant_lao_cuenta)}.-\n{lista_lao_cuenta}\n"
-            else: minuta += f"A CUENTA DE LAO26: {numero_a_texto(cant_lao_cuenta)}.-\n"
-            minuta += f"\n\n"
-            
-            lista_lao26 = obtener_lista_enumerada("LAO")
-            if lista_lao26: minuta += f"LAO26: {numero_a_texto(cant_lao26)}.-\n{lista_lao26}\n"
-            else: minuta += f"LAO26: {numero_a_texto(cant_lao26)}.-\n"
-            minuta += f"\n\n"
-            
-            lista_les = obtener_lista_enumerada("LES")
-            if lista_les: minuta += f"LES: {numero_a_texto(cant_les)}.-\n{lista_les}\n"
-            else: minuta += f"LES: {numero_a_texto(cant_les)}.-\n"
-            minuta += f"\n\n"
-            
-            lista_descanso = obtener_lista_enumerada("DESCANSO DE GUARDIA")
-            if lista_descanso: minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(cant_descanso)}.-\n{lista_descanso}\n"
-            else: minuta += f"DESCANSO DEL SERVICIO DE ARMAS NOCTURNO: {numero_a_texto(cant_descanso)}.-\n"
-            minuta += f"\n\n"
-            
-            lista_diur = obtener_lista_enumerada("GUARDIA DIURNA")
-            if lista_diur: minuta += f"SERVICIO DE ARMAS DIURNO: {numero_a_texto(cant_guardia_diur)}\n{lista_diur}\n"
-            else: minuta += f"SERVICIO DE ARMAS DIURNO: {numero_a_texto(cant_guardia_diur)}\n"
-            minuta += f"\n\n"
-            
-            minuta += f"RACIONAMIENTO: {numero_a_texto(len(rac_hoy))}\n"
+                for aula, cant in sorted(stats['aulas_apresto'].items()):
+                    minuta += f"  - AULA {aula}: {cant} ASPIRANTES\n"
+            minuta += f"\nSSD: {numero_a_texto(cant_ssd)}.-\n"
+            lista = obtener_lista_enumerada("SSD")
+            if lista: minuta += f"{lista}\n"
+            minuta += f"\nAUTORIZADOS: {numero_a_texto(cant_aut)}.-\n"
+            lista = obtener_lista_enumerada("AUTORIZADO")
+            if lista: minuta += f"{lista}\n"
+            minuta += f"\nA CUENTA DE LAO26: {numero_a_texto(cant_lao_cuenta)}.-\n"
+            lista = obtener_lista_enumerada("A CUENTA DE LAO")
+            if lista: minuta += f"{lista}\n"
+            minuta += f"\nLAO26: {numero_a_texto(cant_lao26)}.-\n"
+            lista = obtener_lista_enumerada("LAO")
+            if lista: minuta += f"{lista}\n"
+            minuta += f"\nLES: {numero_a_texto(cant_les)}.-\n"
+            lista = obtener_lista_enumerada("LES")
+            if lista: minuta += f"{lista}\n"
+            minuta += f"\nDESCANSO SERVICIO ARMAS NOCTURNO: {numero_a_texto(cant_descanso)}.-\n"
+            lista = obtener_lista_enumerada("DESCANSO DE GUARDIA")
+            if lista: minuta += f"{lista}\n"
+            minuta += f"\nSERVICIO ARMAS DIURNO: {numero_a_texto(cant_guardia_diur)}\n"
+            lista = obtener_lista_enumerada("GUARDIA DIURNA")
+            if lista: minuta += f"{lista}\n"
+            minuta += f"\nRACIONAMIENTO: {numero_a_texto(len(rac_hoy))}\n"
             if rac_hoy:
-                minuta += f"\n"
                 for i, r in enumerate(rac_hoy, 1):
-                    grado_abr = obtener_grado_abreviado(r[0])
-                    nombre_completo = obtener_nombre_completo(r[0])
-                    minuta += f"{i}. {grado_abr} {nombre_completo}\n"
-            
+                    minuta += f"{i}. {obtener_grado_abreviado(r[0])} {obtener_nombre_completo(r[0])}\n"
             minuta = minuta.upper()
             
             st.text_area("📄 Minuta Generada:", minuta, height=600)
             st.download_button("📥 Descargar Minuta (TXT)", minuta, f"minuta_{datetime.now().strftime('%d%m%y')}.txt", "text/plain")
 
-st.markdown("---")
-st.markdown("<div style='text-align: center; color: #666;'><small>SISTEMA DE NOVEDADES ESCUADRON H - AÑO 2026</small></div>", unsafe_allow_html=True)
+st.markdown('<div class="main-footer"><small>SISTEMA DE NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY" - AÑO 2026<br>Disciplina, Honor y Servicio</small></div>', unsafe_allow_html=True)
