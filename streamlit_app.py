@@ -5,21 +5,22 @@ import csv
 import io
 import requests
 import base64
+import time
 
 # ==================== CONFIGURACIÓN ====================
 st.set_page_config(
     page_title="SISTEMA DE NOVEDADES",
-    page_icon="👮‍️",
+    page_icon="‍♂️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Logo de Gendarmería en Base64 (para que cargue rápido y sin links externos)
-LOGO_GENDARMERIA = """
-<svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
-    <!-- Escudo simplificado de Gendarmería -->
-    <circle cx="60" cy="40" r="35" fill="#1e3a5f" stroke="#4CAF50" stroke-width="3"/>
-    <text x="60" y="50" text-anchor="middle" fill="#4CAF50" font-size="24" font-weight="bold">GNA</text>
+# Logo de Gendarmería en SVG mejorado
+LOGO_GENDARMERIA_SVG = """
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="45" fill="#1e3a5f" stroke="#10b981" stroke-width="3"/>
+    <path d="M 50 15 L 55 35 L 75 35 L 60 48 L 65 68 L 50 55 L 35 68 L 40 48 L 25 35 L 45 35 Z" fill="#10b981"/>
+    <text x="50" y="88" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">GNA</text>
 </svg>
 """
 
@@ -42,24 +43,25 @@ st.markdown("""
     .main-header {
         display: flex;
         align-items: center;
-        gap: 15px;
-        padding: 20px;
+        gap: 20px;
+        padding: 25px;
         background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
         border-radius: 15px;
         margin-bottom: 30px;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-        border: 1px solid #10b981;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        border: 2px solid #10b981;
     }
     
     .header-logo {
-        width: 80px;
-        height: 80px;
+        width: 90px;
+        height: 90px;
         border-radius: 50%;
-        background: #1e3a5f;
+        background: #0f172a;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 3px solid #4CAF50;
+        border: 3px solid #10b981;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
     }
     
     .header-text h1 {
@@ -252,11 +254,24 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 1px;
     }
+    
+    /* Hora en tiempo real */
+    .realtime-clock {
+        font-family: 'Courier New', monospace;
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #10b981;
+        background: #0f172a;
+        padding: 15px;
+        border-radius: 10px;
+        border: 2px solid #10b981;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ==================== CONSTANTES Y CONFIGURACIÓN GITHUB ====================
-USUARIO_CORRECTO = "DRAGJOTAYANLEONEL"
+USUARIO_CORRECTO = "DRAGPRJ"  # Usuario simplificado
 CONTRASENA_CORRECTA = "Drag2026"
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
@@ -473,7 +488,7 @@ def mostrar_header():
     st.markdown(f"""
     <div class="main-header">
         <div class="header-logo">
-            <div style="text-align: center; color: #4CAF50; font-size: 2em; font-weight: bold;">👮‍♂️</div>
+            {LOGO_GENDARMERIA_SVG}
         </div>
         <div class="header-text">
             <h1>SISTEMA DE NOVEDADES</h1>
@@ -491,7 +506,7 @@ def pantalla_login():
     st.markdown('<p class="login-subtitle">NOVEDADES ESCUADRÓN H "CABO MARCELO GODOY"</p>', unsafe_allow_html=True)
     
     with st.form("login_form", clear_on_submit=True):
-        usuario = st.text_input("👤 Usuario", placeholder="Ingrese su usuario", label_visibility="collapsed")
+        usuario = st.text_input("👤 Usuario", placeholder="DRAGPRJ", label_visibility="collapsed")
         contrasena = st.text_input(" Contraseña", type="password", placeholder="Ingrese su contraseña", label_visibility="collapsed")
         submitted = st.form_submit_button("🚀 INGRESAR AL SISTEMA", use_container_width=True)
         
@@ -531,21 +546,32 @@ if 'rac_counter' not in st.session_state: st.session_state['rac_counter'] = 0
 mostrar_header()
 st.markdown("---")
 
-# ==================== SIDEBAR MODERNO ====================
+# ==================== SIDEBAR MODERNO CON HORA EN TIEMPO REAL ====================
 with st.sidebar:
-    st.markdown('<div class="sidebar-header"> PANEL DE CONTROL</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-header">📊 PANEL DE CONTROL</div>', unsafe_allow_html=True)
     st.markdown("---")
     
-    c1, c2 = st.columns(2)
-    with c1: st.metric("📅 Fecha", datetime.now().strftime('%d/%m/%Y'))
-    with c2: st.metric("🕐 Hora", datetime.now().strftime('%H:%M:%S'))
+    # Fecha y Hora en tiempo real
+    ahora = datetime.now()
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown('<div style="text-align: center; padding: 10px; background: #0f172a; border-radius: 10px; border: 2px solid #10b981;">', unsafe_allow_html=True)
+        st.markdown('<div style="color: #94a3b8; font-size: 0.85em;">📅 Fecha</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="color: #10b981; font-size: 1.5em; font-weight: bold;">{ahora.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div style="text-align: center; padding: 10px; background: #0f172a; border-radius: 10px; border: 2px solid #10b981;">', unsafe_allow_html=True)
+        st.markdown('<div style="color: #94a3b8; font-size: 0.85em;">🕐 Hora</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="color: #10b981; font-size: 1.5em; font-weight: bold; font-family: monospace;">{ahora.strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
     stats = calcular_estadisticas()
     if stats:
         st.markdown('<div class="stat-card">', unsafe_allow_html=True)
-        st.markdown('<div class="stat-label"> FUERZA EFECTIVA</div>', unsafe_allow_html=True)
+        st.markdown('<div class="stat-label">👥 FUERZA EFECTIVA</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="stat-value">{stats["total_general"]}</div>', unsafe_allow_html=True)
         st.markdown("---")
         st.metric("✅ Presentes", stats["presentes_total"])
@@ -554,7 +580,7 @@ with st.sidebar:
         
         st.markdown("---")
         st.markdown('<div class="stat-card">', unsafe_allow_html=True)
-        st.markdown('<div class="stat-label"> POR CURSO</div>', unsafe_allow_html=True)
+        st.markdown('<div class="stat-label">📚 POR CURSO</div>', unsafe_allow_html=True)
         st.metric("🎓 Tercer Año", f"{stats['presentes_3']}/{stats['total_3']}")
         st.metric("🛡️ Aux. Operativo", f"{stats['presentes_cao']}/{stats['total_cao']}")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -568,13 +594,13 @@ with st.sidebar:
         if st.download_button("📥 Descargar respaldo", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True): pass
     
     st.markdown("---")
-    if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
+    if st.button(" Cerrar Sesión", type="primary", use_container_width=True):
         st.session_state['logueado'] = False
         st.rerun()
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    " Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
+    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
@@ -646,7 +672,7 @@ with tab2:
 
 # ==================== TAB 3: PLAN LLAMADA ====================
 with tab3:
-    st.header("📞 Plan de Llamada")
+    st.header(" Plan de Llamada")
     empleados = st.session_state.get('empleados', [])
     if empleados:
         nombres = [f"{e[0]} - {e[1]}" for e in empleados]
@@ -669,7 +695,7 @@ with tab4:
             categoria = st.selectbox("📂 Categoría:", [""] + list(MOTIVOS.keys()), key="nov_cat")
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
-            motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
+            motivo = st.selectbox(" Motivo:", [""] + motivos_disponibles, key="nov_mot")
             observaciones = st.text_area("📝 Observaciones:", height=100, key="nov_obs")
         
         if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
@@ -697,7 +723,7 @@ with tab5:
         with col2:
             observaciones = st.text_input("📝 Observaciones:", key="rac_obs")
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("💾 Guardar Almuerzo", type="primary", use_container_width=True):
+            if st.button(" Guardar Almuerzo", type="primary", use_container_width=True):
                 if empleado_sel:
                     nombre = empleado_sel.split(" - ", 1)[1]
                     st.session_state['racionamiento'].append([nombre, "Almuerzo", observaciones, hoy])
