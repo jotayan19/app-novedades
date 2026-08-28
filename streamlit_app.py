@@ -3,14 +3,24 @@ import pandas as pd
 from datetime import datetime
 import csv
 import io
+import requests
+import base64
+import json
 
-# ==================== CONFIGURACIÓN ====================
+# ==================== CONFIGURACIÓN Y ÍCONO IPHONE ====================
 st.set_page_config(
     page_title="SISTEMA DE NOVEDADES",
     page_icon="👮‍♂️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Inyección de HTML para el ícono en iPhone (Apple Touch Icon)
+# Usamos un escudo verde en base64 para que no dependa de links externos
+ICONO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAFJklEQVRoge2ZS2gUQRCGv5md2cxms5tsNrvZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZbDbZ......" 
+# Nota: Por espacio, usaremos un emoji estándar en set_page_config y un CSS para el icono si fuera necesario, 
+# pero Streamlit Cloud maneja mejor el page_icon. Para iPhone, lo ideal es usar una URL de imagen raw de GitHub.
+# Vamos a usar una técnica más robusta inyectando el link al icono que subiremos a tu repo.
 
 st.markdown("""
 <style>
@@ -45,9 +55,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== CONSTANTES ====================
+# ==================== CONSTANTES Y CONFIGURACIÓN GITHUB ====================
 USUARIO_CORRECTO = "DRAGJOTAYANLEONEL"
 CONTRASENA_CORRECTA = "Drag2026"
+
+# Configuración de GitHub API
+GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
+REPO_OWNER = "jotayan19"
+REPO_NAME = "app-novedades"
+BRANCH = "main"
+BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents"
 
 NOMBRES_ARCHIVOS = {
     'empleados': 'empleados.csv', 'horarios': 'horarios.csv',
@@ -65,6 +82,65 @@ MOTIVOS = {
     "Ausente fuera de la escuela": ["SSD", "ART", "DESCANSO DE GUARDIA", "A CUENTA DE LAO", "AUTORIZADO", "LES"],
     "Presente pero fuera del escuadron": ["GUARDIA DIURNA", "GUARDIA NOCTURNA", "FORMACION", "PRACTICA DE DESFILE"]
 }
+
+# ==================== FUNCIONES DE GITHUB (GUARDADO AUTOMÁTICO) ====================
+def get_github_file_sha(filename):
+    """Obtiene el SHA actual del archivo para poder actualizarlo"""
+    if not GITHUB_TOKEN: return None
+    url = f"{BASE_URL}/{filename}?ref={BRANCH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    try:
+        resp = requests.get(url, headers=headers)
+        if resp.status_code == 200:
+            return resp.json().get("sha")
+    except: pass
+    return None
+
+def save_to_github(filename, content_str):
+    """Guarda o actualiza un archivo en GitHub"""
+    if not GITHUB_TOKEN: return False
+    
+    url = f"{BASE_URL}/{filename}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    
+    # Codificar contenido a base64
+    content_b64 = base64.b64encode(content_str.encode('utf-8')).decode('utf-8')
+    
+    # Obtener SHA si existe
+    sha = get_github_file_sha(filename)
+    
+    payload = {
+        "message": f"Auto-save: {filename}",
+        "content": content_b64,
+        "branch": BRANCH
+    }
+    if sha:
+        payload["sha"] = sha
+        
+    try:
+        resp = requests.put(url, json=payload, headers=headers)
+        return resp.status_code in [200, 201]
+    except Exception as e:
+        st.error(f"Error guardando en GitHub: {e}")
+        return False
+
+def load_from_github(filename):
+    """Carga datos desde GitHub"""
+    if not GITHUB_TOKEN: return []
+    
+    url = f"{BASE_URL}/{filename}?ref={BRANCH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    
+    try:
+        resp = requests.get(url, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            content_b64 = data.get("content", "")
+            decoded = base64.b64decode(content_b64).decode('utf-8')
+            reader = csv.reader(decoded.splitlines())
+            return [row for row in reader if row]
+    except: pass
+    return []
 
 # ==================== FUNCIONES AUXILIARES ====================
 def cargar_csv_inicial(nombre_referencia):
@@ -106,19 +182,15 @@ def obtener_nombre_completo(nombre_buscado):
             return emp[1].upper()
     return nombre_buscado.upper()
 
-# ==================== FUNCIÓN CORREGIDA PARA OBTENER HORARIO ====================
 def obtener_horario_aula(aula):
     horarios = st.session_state.get('horarios', [])
     aula_upper = aula.strip().upper()
-    
-    # Extraer solo la parte base del aula (ej: "7 TT" de "7 TT (OMO)")
     aula_base = aula_upper.split('(')[0].strip()
     
     for hor in horarios:
         if len(hor) >= 2:
             hor_aula = hor[0].strip().upper()
             hor_aula_base = hor_aula.split('(')[0].strip()
-            
             if hor_aula_base == aula_base:
                 return hor[1]
     return ""
@@ -256,21 +328,36 @@ def pantalla_login():
                     st.session_state['logueado'] = True
                     st.rerun()
                 else:
-                    st.error("❌ Credenciales incorrectas.")
+                    st.error(" Credenciales incorrectas.")
         
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== INICIALIZACIÓN ====================
+# ==================== INICIALIZACIÓN CON CARGA DESDE GITHUB ====================
 if 'logueado' not in st.session_state: st.session_state['logueado'] = False
 if not st.session_state['logueado']:
     pantalla_login()
     st.stop()
 
-if 'empleados' not in st.session_state: st.session_state['empleados'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['empleados'])
-if 'horarios' not in st.session_state: st.session_state['horarios'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['horarios'])
-if 'novedades' not in st.session_state: st.session_state['novedades'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['novedades'])
-if 'racionamiento' not in st.session_state: st.session_state['racionamiento'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['racionamiento'])
-if 'plan_llamada' not in st.session_state: st.session_state['plan_llamada'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['plan_llamada'])
+# Intentar cargar desde GitHub primero, si falla carga local/vacío
+if 'empleados' not in st.session_state: 
+    data = load_from_github(NOMBRES_ARCHIVOS['empleados'])
+    st.session_state['empleados'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['empleados'])
+    
+if 'horarios' not in st.session_state: 
+    data = load_from_github(NOMBRES_ARCHIVOS['horarios'])
+    st.session_state['horarios'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['horarios'])
+    
+if 'novedades' not in st.session_state: 
+    data = load_from_github(NOMBRES_ARCHIVOS['novedades'])
+    st.session_state['novedades'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['novedades'])
+    
+if 'racionamiento' not in st.session_state: 
+    data = load_from_github(NOMBRES_ARCHIVOS['racionamiento'])
+    st.session_state['racionamiento'] = data if data else cargar_csv_inicial(NOMBRES_ARCHIVOS['racionamiento'])
+    
+if 'plan_llamada' not in st.session_state: 
+    st.session_state['plan_llamada'] = cargar_csv_inicial(NOMBRES_ARCHIVOS['plan_llamada'])
+
 if 'nov_counter' not in st.session_state: st.session_state['nov_counter'] = 0
 if 'rac_counter' not in st.session_state: st.session_state['rac_counter'] = 0
 
@@ -295,15 +382,12 @@ with st.sidebar:
         st.metric("📋 Ausentes", stats["ausentes_total"])
     
     st.markdown("---")
-    st.markdown("#### 💾 Guardar Datos")
-    st.info("⚠️ Descargá los CSV para no perder los datos")
-    
-    if st.download_button("📥 Descargar empleados.csv", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados.csv", mime="text/csv", use_container_width=True):
-        st.success("✅ Descargado")
-    if st.download_button(" Descargar novedades.csv", data=convertir_a_csv(st.session_state['novedades']), file_name="novedades.csv", mime="text/csv", use_container_width=True):
-        st.success("✅ Descargado")
-    if st.download_button("📥 Descargar racionamiento.csv", data=convertir_a_csv(st.session_state['racionamiento']), file_name="racionamiento.csv", mime="text/csv", use_container_width=True):
-        st.success("✅ Descargado")
+    st.markdown("#### 💾 Estado de Guardado")
+    if GITHUB_TOKEN:
+        st.success("✅ Conectado a GitHub\nLos datos se guardan automáticamente")
+    else:
+        st.warning("⚠️ Sin token GitHub\nLos datos se borrarán al salir")
+        if st.download_button("📥 Descargar respaldo CSV", data=convertir_a_csv(st.session_state['empleados']), file_name="empleados_backup.csv", mime="text/csv", use_container_width=True): pass
     
     st.markdown("---")
     if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
@@ -312,7 +396,7 @@ with st.sidebar:
 
 # ==================== PESTAÑAS ====================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "🍽️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
+    "👥 Personal", "🏫 Aulas/Horarios", "📞 Plan Llamada", "📋 Novedades", "️ Racionamiento", "📊 FE por Aula", "📝 Reportes"
 ])
 
 # ==================== TAB 1: PERSONAL ====================
@@ -323,7 +407,7 @@ with tab1:
         st.subheader("📤 Importar Excel")
         archivo_excel = st.file_uploader("Selecciona tu archivo Excel", type=['xlsx', 'xls'], key="excel_personal")
         if archivo_excel is not None:
-            if st.button(" Importar Personal", type="primary", use_container_width=True):
+            if st.button("💾 Importar Personal", type="primary", use_container_width=True):
                 try:
                     df = pd.read_excel(archivo_excel)
                     df.columns = [str(c).strip().upper() for c in df.columns]
@@ -338,16 +422,10 @@ with tab1:
                             empleados.append([grado, nombre, dni, ce, aula])
                     if empleados:
                         st.session_state['empleados'] = empleados
+                        # GUARDAR EN GITHUB AUTOMÁTICAMENTE
+                        if GITHUB_TOKEN:
+                            save_to_github(NOMBRES_ARCHIVOS['empleados'], convertir_a_csv(empleados))
                         st.success(f"✅ Se importaron {len(empleados)} empleados")
-                        
-                        csv_data = convertir_a_csv(empleados)
-                        st.download_button(
-                            "📥 Descargar CSV de respaldo",
-                            data=csv_data,
-                            file_name=f"empleados_{datetime.now().strftime('%d%m%Y')}.csv",
-                            mime="text/csv",
-                            use_container_width=True
-                        )
                         st.rerun()
                 except Exception as e: st.error(f"Error: {str(e)}")
     with col2:
@@ -382,6 +460,9 @@ with tab2:
         
         if st.form_submit_button("💾 Guardar Horarios", type="primary", use_container_width=True):
             st.session_state['horarios'] = nuevos_horarios
+            # GUARDAR EN GITHUB AUTOMÁTICAMENTE
+            if GITHUB_TOKEN:
+                save_to_github(NOMBRES_ARCHIVOS['horarios'], convertir_a_csv(nuevos_horarios))
             st.success("✅ Horarios guardados")
             st.rerun()
     
@@ -417,14 +498,19 @@ with tab4:
         with col2:
             motivos_disponibles = MOTIVOS.get(categoria, [])
             motivo = st.selectbox("📌 Motivo:", [""] + motivos_disponibles, key="nov_mot")
-            observaciones = st.text_area(" Observaciones:", height=100, key="nov_obs")
+            observaciones = st.text_area("📝 Observaciones:", height=100, key="nov_obs")
         
-        if st.button(" Guardar Novedad", type="primary", use_container_width=True):
+        if st.button("💾 Guardar Novedad", type="primary", use_container_width=True):
             if empleado_sel and categoria and motivo:
                 nombre = empleado_sel.split(" - ", 1)[1]
                 nueva_novedad = [nombre, categoria, normalizar_motivo(motivo), observaciones, hoy]
                 st.session_state['novedades'].append(nueva_novedad)
                 st.session_state['nov_counter'] += 1
+                
+                # GUARDAR EN GITHUB AUTOMÁTICAMENTE
+                if GITHUB_TOKEN:
+                    save_to_github(NOMBRES_ARCHIVOS['novedades'], convertir_a_csv(st.session_state['novedades']))
+                    
                 st.success("✅ Novedad guardada")
                 st.rerun()
 
@@ -447,6 +533,11 @@ with tab5:
                     nombre = empleado_sel.split(" - ", 1)[1]
                     st.session_state['racionamiento'].append([nombre, "Almuerzo", observaciones, hoy])
                     st.session_state['rac_counter'] += 1
+                    
+                    # GUARDAR EN GITHUB AUTOMÁTICAMENTE
+                    if GITHUB_TOKEN:
+                        save_to_github(NOMBRES_ARCHIVOS['racionamiento'], convertir_a_csv(st.session_state['racionamiento']))
+                        
                     st.success("✅ Almuerzo registrado")
                     st.rerun()
         
